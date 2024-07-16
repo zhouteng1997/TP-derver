@@ -1,0 +1,7 @@
+#include<wdm.h>
+
+//¶ÁÄÚ´æ
+NTSTATUS IRP_ReadPVirtualMemory(PIRP pirp);
+
+//Ð´ÄÚ´æ
+NTSTATUS IRP_WritePVirtualMemory(PIRP pirp);

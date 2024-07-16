@@ -1,0 +1,82 @@
+# 忽略所有生成的文件
+*.o
+*.obj
+*.exe
+*.out
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# 忽略编译器和IDE生成的文件
+# Visual Studio
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.suo
+*.opensdf
+*.ncb
+*.user
+*.unsuccessfulbuild
+*.ipch
+*.pdb
+*.obj
+*.tlog
+*.log
+*.vspx
+*.vsp
+*.vspf
+*.vspx
+*.vspscc
+.vscode/
+.vs/
+
+# Code::Blocks
+*.cbp
+*.layout
+
+# Eclipse
+.settings/
+.cproject
+.project
+
+# CLion
+.idea/
+*.iml
+*.iws
+*.ipr
+cmake-build-*/
+
+# Xcode
+*.xcworkspace
+*.xcuserstate
+*.xcuserdata/
+
+# CMake
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Makefile
+
+# Qt Creator
+*.pro.user
+*.pro.user.*
+
+# 忽略由操作系统生成的文件
+.DS_Store
+Thumbs.db
+
+# 忽略编译生成的二进制文件和临时文件夹
+bin/
+build/
+dist/
+Debug/
+Release/
+
+# 忽略个人配置文件
+*.swp
+*~
