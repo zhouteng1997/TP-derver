@@ -1,0 +1,1032 @@
+nt!ObReferenceObjectByHandle:       														rsp=ffff828012d876e8
+fffff806`03f52510 4883ec48        sub     rsp,48h   										rsp=ffff828012d876a0
+fffff806`03f52514 488b442478      mov     rax,qword ptr [rsp+78h]
+fffff806`03f52519 48c744243800000000 mov   qword ptr [rsp+38h],0
+fffff806`03f52522 4889442430      mov     qword ptr [rsp+30h],rax
+fffff806`03f52527 488b442470      mov     rax,qword ptr [rsp+70h]
+fffff806`03f5252c 4889442428      mov     qword ptr [rsp+28h],rax
+fffff806`03f52531 c744242044666c74 mov     dword ptr [rsp+20h],746C6644h
+fffff806`03f52539 e812000000      call    nt!ObpReferenceObjectByHandleWithTag (fffff806`03f52550)
+fffff806`03f5253e 4883c448        add     rsp,48h                                                              fffff806`03f5253e
+fffff806`03f52542 c3              ret
+
+
+
+2: kd> dd ffff828012d876a0
+ffff8280`12d876a0  b840a9d0 ffffe38a b840a9d0 ffffe38a
+ffff8280`12d876b0  adca91b0 ffffe38a 03f52510 fffff806
+ffff8280`12d876c0  00000010 00000000 00000344 00000000
+ffff8280`12d876d0  12d876e8 ffff8280 00000018 00000000
+ffff8280`12d876e0  12d876f0 ffff8280 0ae62e1e fffff806
+ffff8280`12d876f0  0ae65040 fffff806 12d87730 ffff8280
+ffff8280`12d87700  12d87728 ffff8280 00000234 00000000
+ffff8280`12d87710  12d87728 ffff8280 12d87730 ffff8280
+
+
++0x418 ObjectTable      : Ptr64 _HANDLE_TABLE
+
+nt!ObpReferenceObjectByHandleWithTag:     														rsp=ffff828012d87698
+fffff806`03f52550 44884c2420      mov     byte ptr [rsp+20h],r9b
+fffff806`03f52555 4c89442418      mov     qword ptr [rsp+18h],r8
+fffff806`03f5255a 89542410        mov     dword ptr [rsp+10h],edx
+fffff806`03f5255e 53              push    rbx
+fffff806`03f5255f 55              push    rbp
+fffff806`03f52560 57              push    rdi
+fffff806`03f52561 4154            push    r12
+fffff806`03f52563 4155            push    r13
+fffff806`03f52565 4157            push    r15
+fffff806`03f52567 4883ec58        sub     rsp,58h
+fffff806`03f5256b 654c8b3c2588010000 mov   r15,qword ptr gs:[188h]                                mov   rdi,qword ptr gs:[188h]
+fffff806`03f52574 488be9          mov     rbp,rcx							rbp=rcx=234
+fffff806`03f52577 4c8ba424b8000000 mov     r12,qword ptr [rsp+0B8h]
+fffff806`03f5257f 33c9            xor     ecx,ecx
+fffff806`03f52581 4c8bac24c8000000 mov     r13,qword ptr [rsp+0C8h]
+fffff806`03f52589 498bd8          mov     rbx,r8
+fffff806`03f5258c 888c24b8000000  mov     byte ptr [rsp+0B8h],cl											mov     byte ptr [rsp+0D0h],bpl
+fffff806`03f52593 498bbfb8000000  mov     rdi,qword ptr [r15+0B8h] 										_process表，可以看到句柄属于哪个进程
+fffff806`03f5259a 4889bc2490000000 mov     qword ptr [rsp+90h],rdi
+fffff806`03f525a2 49890c24        mov     qword ptr [r12],rcx
+fffff806`03f525a6 4d85ed          test    r13,r13
+fffff806`03f525a9 0f8585030000    jne     nt!ObpReferenceObjectByHandleWithTag+0x3e4 (fffff806`03f52934)
+fffff806`03f525af 488bc5          mov     rax,rbp                                                                 rbp+8   rbp=rax=234
+fffff806`03f525b2 4889742450      mov     qword ptr [rsp+50h],rsi
+fffff806`03f525b7 482500000080    and     rax,0FFFFFFFF80000000h                                                rax的值被清空了
+fffff806`03f525bd 4c89742448      mov     qword ptr [rsp+48h],r14
+fffff806`03f525c2 483d00000080    cmp     rax,0FFFFFFFF80000000h
+fffff806`03f525c8 0f8400020000    je      nt!ObpReferenceObjectByHandleWithTag+0x27e (fffff806`03f527ce)
+fffff806`03f525ce f70508e5d7ff00010000 test dword ptr [nt!MmVerifierData (fffff806`03cd0ae0)],100h
+fffff806`03f525d8 0f858e071300    jne     nt!ObpReferenceObjectByHandleWithTag+0x13081c (fffff806`04082d6c)
+fffff806`03f525de 6641ff8fe4010000 dec     word ptr [r15+1E4h]
+fffff806`03f525e6 493bbf20020000  cmp     rdi,qword ptr [r15+220h]
+fffff806`03f525ed 0f8566040000    jne     nt!ObpReferenceObjectByHandleWithTag+0x509 (fffff806`03f52a59)
+fffff806`03f525f3 8b8704030000    mov     eax,dword ptr [rdi+304h]												rax被重新赋值  944d1c01
+fffff806`03f525f9 0fbae01a        bt      eax,1Ah
+fffff806`03f525fd 0f8308050000    jae     nt!ObpReferenceObjectByHandleWithTag+0x5bb (fffff806`03f52b0b)
+fffff806`03f52603 4c8b8f18040000  mov     r9,qword ptr [rdi+418h]                                             //_HANDLE_TABLE r9=_HANDLE_TABLE表地址    //找到了_HANDLE_TABLE
+fffff806`03f5260a 4c898c24c8000000 mov     qword ptr [rsp+0C8h],r9
+fffff806`03f52612 4d85c9          test    r9,r9
+fffff806`03f52615 0f84f0040000    je      nt!ObpReferenceObjectByHandleWithTag+0x5bb (fffff806`03f52b0b)
+fffff806`03f5261b 4c3b0dbed9d7ff  cmp     r9,qword ptr [nt!ObpKernelHandleTable (fffff806`03ccffe0)]
+fffff806`03f52622 0f8470040000    je      nt!ObpReferenceObjectByHandleWithTag+0x548 (fffff806`03f52a98)
+fffff806`03f52628 f7c5fc030000    test    ebp,3FCh
+fffff806`03f5262e 0f845b040000    je      nt!ObpReferenceObjectByHandleWithTag+0x53f (fffff806`03f52a8f)
+fffff806`03f52634 488bd5          mov     rdx,rbp
+fffff806`03f52637 498bc9          mov     rcx,r9
+fffff806`03f5263a e811050000      call    nt!ExpLookupHandleTableEntry (fffff806`03f52b50)    			call之后rax是返回值	rax被重新赋值  944d1c01
+fffff806`03f5263f 488bf8          mov     rdi,rax
+fffff806`03f52642 4885c0          test    rax,rax
+fffff806`03f52645 0f8444040000    je      nt!ObpReferenceObjectByHandleWithTag+0x53f (fffff806`03f52a8f)
+fffff806`03f5264b 0f0d08          prefetchw [rax]
+fffff806`03f5264e 488b08          mov     rcx,qword ptr [rax]
+fffff806`03f52651 488b7008        mov     rsi,qword ptr [rax+8]                           这里把权限返回出来了，说明rax+8里面有handle结构 [rax+8]   
+fffff806`03f52655 4889742438      mov     qword ptr [rsp+38h],rsi
+fffff806`03f5265a 48894c2430      mov     qword ptr [rsp+30h],rcx
+fffff806`03f5265f 4c8b742430      mov     r14,qword ptr [rsp+30h]
+fffff806`03f52664 49f7c6feff0100  test    r14,1FFFEh
+fffff806`03f5266b 0f84ef010000    je      nt!ObpReferenceObjectByHandleWithTag+0x310 (fffff806`03f52860)
+fffff806`03f52671 410fb6c6        movzx   eax,r14b
+fffff806`03f52675 f6d0            not     al
+fffff806`03f52677 a801            test    al,1
+fffff806`03f52679 0f8544030000    jne     nt!ObpReferenceObjectByHandleWithTag+0x473 (fffff806`03f529c3)
+fffff806`03f5267f 498d5efe        lea     rbx,[r14-2]
+fffff806`03f52683 488bce          mov     rcx,rsi
+fffff806`03f52686 498bc6          mov     rax,r14
+fffff806`03f52689 488bd6          mov     rdx,rsi
+fffff806`03f5268c f0480fc70f      lock cmpxchg16b oword ptr [rdi]
+fffff806`03f52691 4c8bf0          mov     r14,rax
+fffff806`03f52694 4889442430      mov     qword ptr [rsp+30h],rax
+fffff806`03f52699 488bf2          mov     rsi,rdx
+fffff806`03f5269c 4889542438      mov     qword ptr [rsp+38h],rdx
+fffff806`03f526a1 0f854b030000    jne     nt!ObpReferenceObjectByHandleWithTag+0x4a2 (fffff806`03f529f2)
+fffff806`03f526a7 488bd8          mov     rbx,rax
+fffff806`03f526aa 48d1eb          shr     rbx,1
+fffff806`03f526ad 6683fb10        cmp     bx,10h
+fffff806`03f526b1 0f84eb030000    je      nt!ObpReferenceObjectByHandleWithTag+0x552 (fffff806`03f52aa2)
+fffff806`03f526b7 488bd8          mov     rbx,rax
+fffff806`03f526ba 48c1fb10        sar     rbx,10h
+fffff806`03f526be 4883e3f0        and     rbx,0FFFFFFFFFFFFFFF0h
+fffff806`03f526c2 833d4749eaff00  cmp     dword ptr [nt!ObpTraceFlags (fffff806`03df7010)],0
+fffff806`03f526c9 0f85de061300    jne     nt!ObpReferenceObjectByHandleWithTag+0x13085d (fffff806`04082dad)
+fffff806`03f526cf 488b9424a0000000 mov     rdx,qword ptr [rsp+0A0h]
+fffff806`03f526d7 4c8d0d222996ff  lea     r9,[nt!MmFreeIndependentPages <PERF> (nt+0x0) (fffff806`038b5000)]
+fffff806`03f526de 488bc3          mov     rax,rbx
+fffff806`03f526e1 48c1e808        shr     rax,8
+fffff806`03f526e5 324318          xor     al,byte ptr [rbx+18h]
+fffff806`03f526e8 3205ea5eeaff    xor     al,byte ptr [nt!ObHeaderCookie (fffff806`03df85d8)]
+fffff806`03f526ee 4885d2          test    rdx,rdx
+fffff806`03f526f1 0f8417010000    je      nt!ObpReferenceObjectByHandleWithTag+0x2be (fffff806`03f5280e)
+fffff806`03f526f7 384228          cmp     byte ptr [rdx+28h],al
+fffff806`03f526fa 0f850e010000    jne     nt!ObpReferenceObjectByHandleWithTag+0x2be (fffff806`03f5280e)
+fffff806`03f52700 81e6ffffff01    and     esi,1FFFFFFh
+fffff806`03f52706 80bc24a800000000 cmp     byte ptr [rsp+0A8h],0
+fffff806`03f5270e 744a            je      nt!ObpReferenceObjectByHandleWithTag+0x20a (fffff806`03f5275a)
+fffff806`03f52710 8bc6            mov     eax,esi
+fffff806`03f52712 f7d0            not     eax
+fffff806`03f52714 85842498000000  test    dword ptr [rsp+98h],eax
+fffff806`03f5271b 0f85e3020000    jne     nt!ObpReferenceObjectByHandleWithTag+0x4b4 (fffff806`03f52a04)
+fffff806`03f52721 0fb6431a        movzx   eax,byte ptr [rbx+1Ah]                                           2。  还没有修改内存，说明在下面
+fffff806`03f52725 a840            test    al,40h
+fffff806`03f52727 7431            je      nt!ObpReferenceObjectByHandleWithTag+0x20a (fffff806`03f5275a)
+fffff806`03f52729 0fb6c0          movzx   eax,al
+fffff806`03f5272c 488bcb          mov     rcx,rbx
+fffff806`03f5272f 83e07f          and     eax,7Fh
+fffff806`03f52732 420fb68408c0b44100 movzx eax,byte ptr [rax+r9+41B4C0h]
+fffff806`03f5273b 482bc8          sub     rcx,rax
+fffff806`03f5273e 488b01          mov     rax,qword ptr [rcx]
+fffff806`03f52741 80781800        cmp     byte ptr [rax+18h],0
+fffff806`03f52745 7413            je      nt!ObpReferenceObjectByHandleWithTag+0x20a (fffff806`03f5275a)
+fffff806`03f52747 488b4010        mov     rax,qword ptr [rax+10h]
+fffff806`03f5274b 4883f801        cmp     rax,1
+fffff806`03f5274f 0f8478061300    je      nt!ObpReferenceObjectByHandleWithTag+0x13087d (fffff806`04082dcd)
+fffff806`03f52755 4c8b742430      mov     r14,qword ptr [rsp+30h]
+fffff806`03f5275a 488b8424c0000000 mov     rax,qword ptr [rsp+0C0h]											3.	还没有修改内存，说明在下面
+fffff806`03f52762 49c1fe11        sar     r14,11h
+fffff806`03f52766 4885c0          test    rax,rax															6.没有修改内存   rax非零 test 指令将清除零标志（ZF）为0 rax不等于0则跳转
+fffff806`03f52769 0f85d3000000    jne     nt!ObpReferenceObjectByHandleWithTag+0x2f2 (fffff806`03f52842)    7.就是它修改了内存，进入fffff806`03f52842查看   jne fz寄存器为0跳转
+fffff806`03f5276f 41f6c604        test    r14b,4															5.修改内存了，在前面
+fffff806`03f52773 0f85dd000000    jne     nt!ObpReferenceObjectByHandleWithTag+0x306 (fffff806`03f52856)
+fffff806`03f52779 4532d2          xor     r10b,r10b
+fffff806`03f5277c 4c8b9c24c8000000 mov     r11,qword ptr [rsp+0C8h]
+fffff806`03f52784 4d85ed          test    r13,r13
+fffff806`03f52787 0f85b2010000    jne     nt!ObpReferenceObjectByHandleWithTag+0x3ef (fffff806`03f5293f)
+fffff806`03f5278d 4584d2          test    r10b,r10b																4. 修改内存了，在前面
+fffff806`03f52790 0f854d061300    jne     nt!ObpReferenceObjectByHandleWithTag+0x130893 (fffff806`04082de3)
+fffff806`03f52796 80bc24b800000000 cmp     byte ptr [rsp+0B8h],0
+fffff806`03f5279e 488d4330        lea     rax,[rbx+30h]
+fffff806`03f527a2 49890424        mov     qword ptr [r12],rax
+fffff806`03f527a6 0f85c5020000    jne     nt!ObpReferenceObjectByHandleWithTag+0x521 (fffff806`03f52a71)
+fffff806`03f527ac 498bcf          mov     rcx,r15
+fffff806`03f527af e8dc6da7ff      call    nt!KeLeaveCriticalRegionThread (fffff806`039c9590)
+fffff806`03f527b4 33c0            xor     eax,eax
+fffff806`03f527b6 4c8b742448      mov     r14,qword ptr [rsp+48h]
+fffff806`03f527bb 488b742450      mov     rsi,qword ptr [rsp+50h]
+fffff806`03f527c0 4883c458        add     rsp,58h															1.二分法到这里已经变了，说明在前面
+fffff806`03f527c4 415f            pop     r15
+fffff806`03f527c6 415d            pop     r13
+fffff806`03f527c8 415c            pop     r12
+fffff806`03f527ca 5f              pop     rdi
+fffff806`03f527cb 5d              pop     rbp																运行到这里之后，直接跳转到了 fffff806`03f52790
+fffff806`03f527cc 5b              pop     rbx
+fffff806`03f527cd c3              ret
+fffff806`03f527ce 4883fdff        cmp     rbp,0FFFFFFFFFFFFFFFFh
+fffff806`03f527d2 0f848b010000    je      nt!ObpReferenceObjectByHandleWithTag+0x413 (fffff806`03f52963)
+fffff806`03f527d8 4883fdfe        cmp     rbp,0FFFFFFFFFFFFFFFEh
+fffff806`03f527dc 0f84f9000000    je      nt!ObpReferenceObjectByHandleWithTag+0x38b (fffff806`03f528db)
+fffff806`03f527e2 4584c9          test    r9b,r9b
+fffff806`03f527e5 0f8577051300    jne     nt!ObpReferenceObjectByHandleWithTag+0x130812 (fffff806`04082d62)
+fffff806`03f527eb 4c8b0deed7d7ff  mov     r9,qword ptr [nt!ObpKernelHandleTable (fffff806`03ccffe0)]
+fffff806`03f527f2 4881f500000080  xor     rbp,0FFFFFFFF80000000h
+fffff806`03f527f9 6641ff8fe4010000 dec     word ptr [r15+1E4h]
+fffff806`03f52801 4c898c24c8000000 mov     qword ptr [rsp+0C8h],r9
+fffff806`03f52809 e91afeffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0xd8 (fffff806`03f52628)
+fffff806`03f5280e 0fb6c8          movzx   ecx,al
+fffff806`03f52811 4d8b84c9603c5400 mov     r8,qword ptr [r9+rcx*8+543C60h]
+fffff806`03f52819 4d85c0          test    r8,r8
+fffff806`03f5281c 0f84f7051300    je      nt!ObpReferenceObjectByHandleWithTag+0x1308c9 (fffff806`04082e19)
+fffff806`03f52822 4c3b059f5beaff  cmp     r8,qword ptr [nt!MmBadPointer (fffff806`03df83c8)]
+fffff806`03f52829 0f84ea051300    je      nt!ObpReferenceObjectByHandleWithTag+0x1308c9 (fffff806`04082e19)
+fffff806`03f5282f 4885d2          test    rdx,rdx
+fffff806`03f52832 0f84c8feffff    je      nt!ObpReferenceObjectByHandleWithTag+0x1b0 (fffff806`03f52700)
+fffff806`03f52838 bf240000c0      mov     edi,0C0000024h
+fffff806`03f5283d e9c7010000      jmp     nt!ObpReferenceObjectByHandleWithTag+0x4b9 (fffff806`03f52a09)
+fffff806`03f52842 4183e607        and     r14d,7																 8.修改了内存，跳转的地址   rsi
+fffff806`03f52846 897004          mov     dword ptr [rax+4],esi
+fffff806`03f52849 448930          mov     dword ptr [rax],r14d				//这里是权限赋值
+fffff806`03f5284c 41f6c604        test    r14b,4
+fffff806`03f52850 0f8423ffffff    je      nt!ObpReferenceObjectByHandleWithTag+0x229 (fffff806`03f52779)
+fffff806`03f52856 41b201          mov     r10b,1
+fffff806`03f52859 e91effffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x22c (fffff806`03f5277c)
+fffff806`03f5285e 6690            nop
+fffff806`03f52860 0f0d0f          prefetchw [rdi]
+fffff806`03f52863 4c8b07          mov     r8,qword ptr [rdi]
+fffff806`03f52866 41f6c001        test    r8b,1
+fffff806`03f5286a 0f841a020000    je      nt!ObpReferenceObjectByHandleWithTag+0x53a (fffff806`03f52a8a)
+fffff806`03f52870 498d48ff        lea     rcx,[r8-1]
+fffff806`03f52874 498bc0          mov     rax,r8
+fffff806`03f52877 f0480fb10f      lock cmpxchg qword ptr [rdi],rcx
+fffff806`03f5287c 75e2            jne     nt!ObpReferenceObjectByHandleWithTag+0x310 (fffff806`03f52860)
+fffff806`03f5287e 488b1f          mov     rbx,qword ptr [rdi]
+fffff806`03f52881 488bcf          mov     rcx,rdi
+fffff806`03f52884 0f1007          movups  xmm0,xmmword ptr [rdi]
+fffff806`03f52887 48c1fb10        sar     rbx,10h
+fffff806`03f5288b 4883e3f0        and     rbx,0FFFFFFFFFFFFFFF0h
+fffff806`03f5288f 0f11442430      movups  xmmword ptr [rsp+30h],xmm0
+fffff806`03f52894 e8c73a99ff      call    nt!ExSlowReplenishHandleTableEntry (fffff806`038e6360)
+fffff806`03f52899 ffc0            inc     eax
+fffff806`03f5289b 4863c8          movsxd  rcx,eax
+fffff806`03f5289e 488bc1          mov     rax,rcx
+fffff806`03f528a1 f0480fc103      lock xadd qword ptr [rbx],rax
+fffff806`03f528a6 4885c0          test    rax,rax
+fffff806`03f528a9 0f8ee3041300    jle     nt!ObpReferenceObjectByHandleWithTag+0x130842 (fffff806`04082d92)
+fffff806`03f528af b801000000      mov     eax,1
+fffff806`03f528b4 f0480fc107      lock xadd qword ptr [rdi],rax
+fffff806`03f528b9 498d4930        lea     rcx,[r9+30h]
+fffff806`03f528bd f0830c2400      lock or dword ptr [rsp],0
+fffff806`03f528c2 48833900        cmp     qword ptr [rcx],0
+fffff806`03f528c6 0f8549020000    jne     nt!ObpReferenceObjectByHandleWithTag+0x5c5 (fffff806`03f52b15)
+fffff806`03f528cc 488b742438      mov     rsi,qword ptr [rsp+38h]
+fffff806`03f528d1 4c8b742430      mov     r14,qword ptr [rsp+30h]
+fffff806`03f528d6 e9e7fdffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x172 (fffff806`03f526c2)
+fffff806`03f528db 483b1d165aeaff  cmp     rbx,qword ptr [nt!PsThreadType (fffff806`03df82f8)]
+fffff806`03f528e2 0f8539020000    jne     nt!ObpReferenceObjectByHandleWithTag+0x5d1 (fffff806`03f52b21)
+fffff806`03f528e8 f7c20000e0ff    test    edx,0FFE00000h
+fffff806`03f528ee 0f8524041300    jne     nt!ObpReferenceObjectByHandleWithTag+0x1307c8 (fffff806`04082d18)
+fffff806`03f528f4 488b8424c0000000 mov     rax,qword ptr [rsp+0C0h]
+fffff806`03f528fc 4885c0          test    rax,rax
+fffff806`03f528ff 0f852a020000    jne     nt!ObpReferenceObjectByHandleWithTag+0x5df (fffff806`03f52b2f)
+fffff806`03f52905 390d0547eaff    cmp     dword ptr [nt!ObpTraceFlags (fffff806`03df7010)],ecx
+fffff806`03f5290b bb01000000      mov     ebx,1
+fffff806`03f52910 0f8515041300    jne     nt!ObpReferenceObjectByHandleWithTag+0x1307db (fffff806`04082d2b)
+fffff806`03f52916 f0490fc15fd0    lock xadd qword ptr [r15-30h],rbx
+fffff806`03f5291c 48ffc3          inc     rbx
+fffff806`03f5291f 4883fb01        cmp     rbx,1
+fffff806`03f52923 0f8e20041300    jle     nt!ObpReferenceObjectByHandleWithTag+0x1307f9 (fffff806`04082d49)
+fffff806`03f52929 4d893c24        mov     qword ptr [r12],r15
+fffff806`03f5292d 8bc1            mov     eax,ecx
+fffff806`03f5292f e982feffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x266 (fffff806`03f527b6)
+fffff806`03f52934 33c0            xor     eax,eax
+fffff806`03f52936 49894500        mov     qword ptr [r13],rax
+fffff806`03f5293a e970fcffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x5f (fffff806`03f525af)
+fffff806`03f5293f 41837b0400      cmp     dword ptr [r11+4],0
+fffff806`03f52944 0f8443feffff    je      nt!ObpReferenceObjectByHandleWithTag+0x23d (fffff806`03f5278d)
+fffff806`03f5294a 488bd5          mov     rdx,rbp
+fffff806`03f5294d 498bcb          mov     rcx,r11
+fffff806`03f52950 e8cb0c2300      call    nt!ExpGetHandleExtraInfo (fffff806`04183620)
+fffff806`03f52955 4885c0          test    rax,rax
+fffff806`03f52958 0f842ffeffff    je      nt!ObpReferenceObjectByHandleWithTag+0x23d (fffff806`03f5278d)
+fffff806`03f5295e e974041300      jmp     nt!ObpReferenceObjectByHandleWithTag+0x130887 (fffff806`04082dd7)
+fffff806`03f52963 483b1d6659eaff  cmp     rbx,qword ptr [nt!PsProcessType (fffff806`03df82d0)]
+fffff806`03f5296a 0f85c6000000    jne     nt!ObpReferenceObjectByHandleWithTag+0x4e6 (fffff806`03f52a36)
+fffff806`03f52970 498bbfb8000000  mov     rdi,qword ptr [r15+0B8h]
+fffff806`03f52977 f7c20000e0ff    test    edx,0FFE00000h
+fffff806`03f5297d 0f8541031300    jne     nt!ObpReferenceObjectByHandleWithTag+0x130774 (fffff806`04082cc4)
+fffff806`03f52983 488b8424c0000000 mov     rax,qword ptr [rsp+0C0h]
+fffff806`03f5298b 4885c0          test    rax,rax
+fffff806`03f5298e 0f85b7000000    jne     nt!ObpReferenceObjectByHandleWithTag+0x4fb (fffff806`03f52a4b)
+fffff806`03f52994 390d7646eaff    cmp     dword ptr [nt!ObpTraceFlags (fffff806`03df7010)],ecx
+fffff806`03f5299a bb01000000      mov     ebx,1
+fffff806`03f5299f 0f8532031300    jne     nt!ObpReferenceObjectByHandleWithTag+0x130787 (fffff806`04082cd7)
+fffff806`03f529a5 f0480fc15fd0    lock xadd qword ptr [rdi-30h],rbx
+fffff806`03f529ab 48ffc3          inc     rbx
+fffff806`03f529ae 4883fb01        cmp     rbx,1
+fffff806`03f529b2 0f8e3d031300    jle     nt!ObpReferenceObjectByHandleWithTag+0x1307a5 (fffff806`04082cf5)
+fffff806`03f529b8 49893c24        mov     qword ptr [r12],rdi
+fffff806`03f529bc 8bc1            mov     eax,ecx
+fffff806`03f529be e9f3fdffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x266 (fffff806`03f527b6)
+fffff806`03f529c3 4d8bc6          mov     r8,r14
+fffff806`03f529c6 488bd7          mov     rdx,rdi
+fffff806`03f529c9 498bc9          mov     rcx,r9
+fffff806`03f529cc e833e3f8ff      call    nt!ExpBlockOnLockedHandleEntry (fffff806`03ee0d04)
+fffff806`03f529d1 0f0d0f          prefetchw [rdi]
+fffff806`03f529d4 488b07          mov     rax,qword ptr [rdi]
+fffff806`03f529d7 488b7708        mov     rsi,qword ptr [rdi+8]
+fffff806`03f529db 4c8b8c24c8000000 mov     r9,qword ptr [rsp+0C8h]
+fffff806`03f529e3 4889442430      mov     qword ptr [rsp+30h],rax
+fffff806`03f529e8 4c8b742430      mov     r14,qword ptr [rsp+30h]
+fffff806`03f529ed 4889742438      mov     qword ptr [rsp+38h],rsi
+fffff806`03f529f2 49f7c6feff0100  test    r14,1FFFEh
+fffff806`03f529f9 0f8572fcffff    jne     nt!ObpReferenceObjectByHandleWithTag+0x121 (fffff806`03f52671)
+fffff806`03f529ff e95cfeffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x310 (fffff806`03f52860)
+fffff806`03f52a04 bf220000c0      mov     edi,0C0000022h
+fffff806`03f52a09 8b9424b0000000  mov     edx,dword ptr [rsp+0B0h]
+fffff806`03f52a10 488d4b30        lea     rcx,[rbx+30h]
+fffff806`03f52a14 e8876aa7ff      call    nt!ObfDereferenceObjectWithTag (fffff806`039c94a0)
+fffff806`03f52a19 80bc24b800000000 cmp     byte ptr [rsp+0B8h],0
+fffff806`03f52a21 0f852c041300    jne     nt!ObpReferenceObjectByHandleWithTag+0x130903 (fffff806`04082e53)
+fffff806`03f52a27 498bcf          mov     rcx,r15
+fffff806`03f52a2a e8616ba7ff      call    nt!KeLeaveCriticalRegionThread (fffff806`039c9590)
+fffff806`03f52a2f 8bc7            mov     eax,edi
+fffff806`03f52a31 e980fdffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x266 (fffff806`03f527b6)
+fffff806`03f52a36 4885db          test    rbx,rbx
+fffff806`03f52a39 0f8431ffffff    je      nt!ObpReferenceObjectByHandleWithTag+0x420 (fffff806`03f52970)
+fffff806`03f52a3f b9240000c0      mov     ecx,0C0000024h
+fffff806`03f52a44 8bc1            mov     eax,ecx
+fffff806`03f52a46 e96bfdffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x266 (fffff806`03f527b6)
+fffff806`03f52a4b c74004ffff1f00  mov     dword ptr [rax+4],1FFFFFh
+fffff806`03f52a52 8908            mov     dword ptr [rax],ecx
+fffff806`03f52a54 e93bffffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x444 (fffff806`03f52994)
+fffff806`03f52a59 488bcf          mov     rcx,rdi
+fffff806`03f52a5c e81f4df5ff      call    nt!ObReferenceProcessHandleTable (fffff806`03ea7780)
+fffff806`03f52a61 4c8bc8          mov     r9,rax
+fffff806`03f52a64 c68424b800000001 mov     byte ptr [rsp+0B8h],1
+fffff806`03f52a6c e999fbffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0xba (fffff806`03f5260a)
+fffff806`03f52a71 488b8c2490000000 mov     rcx,qword ptr [rsp+90h]
+fffff806`03f52a79 4881c1f8020000  add     rcx,2F8h
+fffff806`03f52a80 e87b22a7ff      call    nt!ExReleaseRundownProtection (fffff806`039c4d00)
+fffff806`03f52a85 e922fdffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x25c (fffff806`03f527ac)
+fffff806`03f52a8a 4d85c0          test    r8,r8
+fffff806`03f52a8d 7564            jne     nt!ObpReferenceObjectByHandleWithTag+0x5a3 (fffff806`03f52af3)
+fffff806`03f52a8f 4885ed          test    rbp,rbp
+fffff806`03f52a92 0f8599031300    jne     nt!ObpReferenceObjectByHandleWithTag+0x1308e1 (fffff806`04082e31)
+fffff806`03f52a98 bf080000c0      mov     edi,0C0000008h
+fffff806`03f52a9d e977ffffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x4c9 (fffff806`03f52a19)
+fffff806`03f52aa2 488d1c5dfeffffff lea     rbx,[rbx*2-2]
+fffff806`03f52aaa baf07f0000      mov     edx,7FF0h
+fffff806`03f52aaf 4833d8          xor     rbx,rax
+fffff806`03f52ab2 81e3feff0100    and     ebx,1FFFEh
+fffff806`03f52ab8 4833d8          xor     rbx,rax
+fffff806`03f52abb 48895c2430      mov     qword ptr [rsp+30h],rbx
+fffff806`03f52ac0 48c1fb10        sar     rbx,10h
+fffff806`03f52ac4 4883e3f0        and     rbx,0FFFFFFFFFFFFFFF0h
+fffff806`03f52ac8 488bcb          mov     rcx,rbx
+fffff806`03f52acb e8683899ff      call    nt!ObpIncrPointerCountEx (fffff806`038e6338)
+fffff806`03f52ad0 41b8f07f0000    mov     r8d,7FF0h
+fffff806`03f52ad6 488d542430      lea     rdx,[rsp+30h]
+fffff806`03f52adb 488bcf          mov     rcx,rdi
+fffff806`03f52ade e8bdb69eff      call    nt!ExFastReplenishHandleTableEntry (fffff806`0393e1a0)
+fffff806`03f52ae3 4863c8          movsxd  rcx,eax
+fffff806`03f52ae6 85c0            test    eax,eax
+fffff806`03f52ae8 0f84defdffff    je      nt!ObpReferenceObjectByHandleWithTag+0x37c (fffff806`03f528cc)
+fffff806`03f52aee e990021300      jmp     nt!ObpReferenceObjectByHandleWithTag+0x130833 (fffff806`04082d83)
+fffff806`03f52af3 488bd7          mov     rdx,rdi
+fffff806`03f52af6 498bc9          mov     rcx,r9
+fffff806`03f52af9 e806e2f8ff      call    nt!ExpBlockOnLockedHandleEntry (fffff806`03ee0d04)
+fffff806`03f52afe 4c8b8c24c8000000 mov     r9,qword ptr [rsp+0C8h]
+fffff806`03f52b06 e955fdffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x310 (fffff806`03f52860)
+fffff806`03f52b0b bf080000c0      mov     edi,0C0000008h
+fffff806`03f52b10 e912ffffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x4d7 (fffff806`03f52a27)
+fffff806`03f52b15 33d2            xor     edx,edx
+fffff806`03f52b17 e89412b1ff      call    nt!ExfUnblockPushLock (fffff806`03a63db0)
+fffff806`03f52b1c e9abfdffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x37c (fffff806`03f528cc)
+fffff806`03f52b21 4885db          test    rbx,rbx
+fffff806`03f52b24 0f84befdffff    je      nt!ObpReferenceObjectByHandleWithTag+0x398 (fffff806`03f528e8)
+fffff806`03f52b2a e9df011300      jmp     nt!ObpReferenceObjectByHandleWithTag+0x1307be (fffff806`04082d0e)
+fffff806`03f52b2f c74004ffff1f00  mov     dword ptr [rax+4],1FFFFFh
+fffff806`03f52b36 8908            mov     dword ptr [rax],ecx
+fffff806`03f52b38 e9c8fdffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x3b5 (fffff806`03f52905)
+fffff806`03f52b3d cc              int     3
+fffff806`03f52b3e cc              int     3
+fffff806`03f52b3f cc              int     3
+fffff806`03f52b40 cc              int     3
+fffff806`03f52b41 cc              int     3
+fffff806`03f52b42 cc              int     3
+fffff806`03f52b43 cc              int     3
+fffff806`03f52b44 cc              int     3
+fffff806`03f52b45 cc              int     3
+fffff806`03f52b46 cc              int     3
+fffff806`03f52b47 cc              int     3
+fffff806`03f52b48 cc              int     3
+fffff806`03f52b49 cc              int     3
+fffff806`03f52b4a cc              int     3
+fffff806`03f52b4b cc              int     3
+fffff806`03f52b4c cc              int     3
+fffff806`03f52b4d cc              int     3
+fffff806`03f52b4e cc              int     3
+fffff806`03f52b4f cc              int     3
+
+
+
+
+
+
+
+2: kd> r
+rax=00000000944d1c01 rbx=ffffe38aab88ada0 rcx=ffffae046b038200
+rdx=0000000000000234 rsi=0000000000000001 rdi=ffffe38aadf29540
+rip=fffff80603f5263a rsp=ffff828012d87610 rbp=0000000000000234
+ r8=ffffe38aab88ada0  r9=ffffae046b038200 r10=ffff828012d87500
+r11=0000000000000000 r12=ffff828012d87728 r13=0000000000000000
+r14=0000000000000002 r15=ffffe38ab1443080
+iopl=0         nv up ei pl nz na pe nc
+cs=0010  ss=0018  ds=002b  es=002b  fs=0053  gs=002b             efl=00000202
+nt!ObpReferenceObjectByHandleWithTag+0xea:
+fffff806`03f5263a e811050000      call    nt!ExpLookupHandleTableEntry (fffff806`03f52b50)
+
+
+nt!ExpLookupHandleTableEntry:
+fffff806`03f52b50 8b01            mov     eax,dword ptr [rcx]                       											_HANDLE_TABLE   最后一位为0，1，2，对应这个进程的句柄表
+fffff806`03f52b52 4883e2fc        and     rdx,0FFFFFFFFFFFFFFFCh
+fffff806`03f52b56 483bd0          cmp     rdx,rax																				_句柄 0x234
+fffff806`03f52b59 7333            jae     nt!ExpLookupHandleTableEntry+0x3e (fffff806`03f52b8e)
+fffff806`03f52b5b 4c8b4108        mov     r8,qword ptr [rcx+8]																	_HANDLE_TABLE->tableCode
+fffff806`03f52b5f 418bc0          mov     eax,r8d
+fffff806`03f52b62 83e003          and     eax,3
+fffff806`03f52b65 83f801          cmp     eax,1   eax=0|1|2   如果是1，往下走，否则跳转
+fffff806`03f52b68 7517            jne     nt!ExpLookupHandleTableEntry+0x31 (fffff806`03f52b81)
+fffff806`03f52b6a 488bc2          mov     rax,rdx                                                								_句柄 0x234
+fffff806`03f52b6d 48c1e80a        shr     rax,0Ah																			//shr     rax,0Ah 把 rax右移10位   rax是句柄，句柄的区间为1024bit，
+fffff806`03f52b71 498b44c0ff      mov     rax,qword ptr [r8+rax*8-1]															这个rax实际地址，r8为基址表 [r8+rax*8-1] 是基址表的位置偏移，这个基质表存储的是地址x
+fffff806`03f52b76 81e2ff030000    and     edx,3FFh															0f85e5021300的返回
+fffff806`03f52b7c 488d0490        lea     rax,[rax+rdx*4]                 		//编号0的表
+fffff806`03f52b80 c3              ret
+fffff806`03f52b81 85c0            test    eax,eax    如果不是1，在这里，是0往下走，是2跳转
+fffff806`03f52b83 0f85e5021300    jne     nt!ExpLookupHandleTableEntry+0x13031e (fffff806`04082e6e)    结束后会返回fffff806`03f52b76 81e2ff030000    and     edx,3FFh
+fffff806`03f52b89 498d0490        lea     rax,[r8+rdx*4]                     //编号1的表                                        
+fffff806`03f52b8d c3              ret
+fffff806`03f52b8e 33c0            xor     eax,eax
+fffff806`03f52b90 c3              ret
+fffff806`03f52b91 cc              int     3
+fffff806`03f52b92 cc              int     3
+fffff806`03f52b93 cc              int     3
+fffff806`03f52b94 cc              int     3
+fffff806`03f52b95 cc              int     3
+fffff806`03f52b96 cc              int     3
+fffff806`03f52b97 cc              int     3
+fffff806`03f52b98 cc              int     3
+fffff806`03f52b99 cc              int     3
+fffff806`03f52b9a cc              int     3
+fffff806`03f52b9b cc              int     3
+fffff806`03f52b9c cc              int     3
+fffff806`03f52b9d cc              int     3
+fffff806`03f52b9e cc              int     3
+fffff806`03f52b9f cc              int     3
+
+
+
+//第一次追踪没有到这里，所以地址和前面不同，只能看 nt!ExpLookupHandleTableEntry+0x13031e这种基址加法 fffff805`3d7e3e6e 是错误的，每次系统重启，地址都会变更
+0: kd> u nt!ExpLookupHandleTableEntry+0x13031e l 100
+nt!ExpLookupHandleTableEntry+0x13031e:
+fffff805`3d7e3e6e 488bca          mov     rcx,rdx
+fffff805`3d7e3e71 48c1e90a        shr     rcx,0Ah
+fffff805`3d7e3e75 488bc1          mov     rax,rcx
+fffff805`3d7e3e78 48c1e809        shr     rax,9
+fffff805`3d7e3e7c 81e1ff010000    and     ecx,1FFh
+fffff805`3d7e3e82 498b44c0fe      mov     rax,qword ptr [r8+rax*8-2]
+fffff805`3d7e3e87 488b04c8        mov     rax,qword ptr [rax+rcx*8]
+fffff805`3d7e3e8b e9e6fcecff      jmp     nt!ExpLookupHandleTableEntry+0x26 (fffff805`3d6b3b76)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+2: kd> u nt!ObpReferenceObjectByHandleWithTag
+nt!ObpReferenceObjectByHandleWithTag:
+fffff806`03f52550 44884c2420      mov     byte ptr [rsp+20h],r9b
+fffff806`03f52555 4c89442418      mov     qword ptr [rsp+18h],r8
+fffff806`03f5255a 89542410        mov     dword ptr [rsp+10h],edx
+fffff806`03f5255e 53              push    rbx
+fffff806`03f5255f 55              push    rbp
+fffff806`03f52560 57              push    rdi
+fffff806`03f52561 4154            push    r12
+fffff806`03f52563 4155            push    r13
+2: kd> u nt!ObpReferenceObjectByHandleWithTag l 100
+nt!ObpReferenceObjectByHandleWithTag:
+fffff806`03f52550 44884c2420      mov     byte ptr [rsp+20h],r9b
+fffff806`03f52555 4c89442418      mov     qword ptr [rsp+18h],r8
+fffff806`03f5255a 89542410        mov     dword ptr [rsp+10h],edx
+fffff806`03f5255e 53              push    rbx
+fffff806`03f5255f 55              push    rbp
+fffff806`03f52560 57              push    rdi
+fffff806`03f52561 4154            push    r12
+fffff806`03f52563 4155            push    r13
+fffff806`03f52565 4157            push    r15
+fffff806`03f52567 4883ec58        sub     rsp,58h
+fffff806`03f5256b 654c8b3c2588010000 mov   r15,qword ptr gs:[188h]
+fffff806`03f52574 488be9          mov     rbp,rcx
+fffff806`03f52577 4c8ba424b8000000 mov     r12,qword ptr [rsp+0B8h]
+fffff806`03f5257f 33c9            xor     ecx,ecx
+fffff806`03f52581 4c8bac24c8000000 mov     r13,qword ptr [rsp+0C8h]
+fffff806`03f52589 498bd8          mov     rbx,r8
+fffff806`03f5258c 888c24b8000000  mov     byte ptr [rsp+0B8h],cl
+fffff806`03f52593 498bbfb8000000  mov     rdi,qword ptr [r15+0B8h]
+fffff806`03f5259a 4889bc2490000000 mov     qword ptr [rsp+90h],rdi
+fffff806`03f525a2 49890c24        mov     qword ptr [r12],rcx
+fffff806`03f525a6 4d85ed          test    r13,r13
+fffff806`03f525a9 0f8585030000    jne     nt!ObpReferenceObjectByHandleWithTag+0x3e4 (fffff806`03f52934)
+fffff806`03f525af 488bc5          mov     rax,rbp
+fffff806`03f525b2 4889742450      mov     qword ptr [rsp+50h],rsi
+fffff806`03f525b7 482500000080    and     rax,0FFFFFFFF80000000h
+fffff806`03f525bd 4c89742448      mov     qword ptr [rsp+48h],r14
+fffff806`03f525c2 483d00000080    cmp     rax,0FFFFFFFF80000000h
+fffff806`03f525c8 0f8400020000    je      nt!ObpReferenceObjectByHandleWithTag+0x27e (fffff806`03f527ce)
+fffff806`03f525ce f70508e5d7ff00010000 test dword ptr [nt!MmVerifierData (fffff806`03cd0ae0)],100h
+fffff806`03f525d8 0f858e071300    jne     nt!ObpReferenceObjectByHandleWithTag+0x13081c (fffff806`04082d6c)
+fffff806`03f525de 6641ff8fe4010000 dec     word ptr [r15+1E4h]
+fffff806`03f525e6 493bbf20020000  cmp     rdi,qword ptr [r15+220h]
+fffff806`03f525ed 0f8566040000    jne     nt!ObpReferenceObjectByHandleWithTag+0x509 (fffff806`03f52a59)
+fffff806`03f525f3 8b8704030000    mov     eax,dword ptr [rdi+304h]
+fffff806`03f525f9 0fbae01a        bt      eax,1Ah
+fffff806`03f525fd 0f8308050000    jae     nt!ObpReferenceObjectByHandleWithTag+0x5bb (fffff806`03f52b0b)
+fffff806`03f52603 4c8b8f18040000  mov     r9,qword ptr [rdi+418h]                                            //找到了_HANDLE_TABLE
+fffff806`03f5260a 4c898c24c8000000 mov     qword ptr [rsp+0C8h],r9
+fffff806`03f52612 4d85c9          test    r9,r9
+fffff806`03f52615 0f84f0040000    je      nt!ObpReferenceObjectByHandleWithTag+0x5bb (fffff806`03f52b0b)
+fffff806`03f5261b 4c3b0dbed9d7ff  cmp     r9,qword ptr [nt!ObpKernelHandleTable (fffff806`03ccffe0)]
+fffff806`03f52622 0f8470040000    je      nt!ObpReferenceObjectByHandleWithTag+0x548 (fffff806`03f52a98)
+fffff806`03f52628 f7c5fc030000    test    ebp,3FCh
+fffff806`03f5262e 0f845b040000    je      nt!ObpReferenceObjectByHandleWithTag+0x53f (fffff806`03f52a8f)
+fffff806`03f52634 488bd5          mov     rdx,rbp
+fffff806`03f52637 498bc9          mov     rcx,r9
+fffff806`03f5263a e811050000      call    nt!ExpLookupHandleTableEntry (fffff806`03f52b50)
+fffff806`03f5263f 488bf8          mov     rdi,rax
+fffff806`03f52642 4885c0          test    rax,rax
+fffff806`03f52645 0f8444040000    je      nt!ObpReferenceObjectByHandleWithTag+0x53f (fffff806`03f52a8f)
+fffff806`03f5264b 0f0d08          prefetchw [rax]
+fffff806`03f5264e 488b08          mov     rcx,qword ptr [rax]
+fffff806`03f52651 488b7008        mov     rsi,qword ptr [rax+8]
+fffff806`03f52655 4889742438      mov     qword ptr [rsp+38h],rsi
+fffff806`03f5265a 48894c2430      mov     qword ptr [rsp+30h],rcx
+fffff806`03f5265f 4c8b742430      mov     r14,qword ptr [rsp+30h]
+fffff806`03f52664 49f7c6feff0100  test    r14,1FFFEh
+fffff806`03f5266b 0f84ef010000    je      nt!ObpReferenceObjectByHandleWithTag+0x310 (fffff806`03f52860)
+fffff806`03f52671 410fb6c6        movzx   eax,r14b
+fffff806`03f52675 f6d0            not     al
+fffff806`03f52677 a801            test    al,1
+fffff806`03f52679 0f8544030000    jne     nt!ObpReferenceObjectByHandleWithTag+0x473 (fffff806`03f529c3)
+fffff806`03f5267f 498d5efe        lea     rbx,[r14-2]
+fffff806`03f52683 488bce          mov     rcx,rsi
+fffff806`03f52686 498bc6          mov     rax,r14
+fffff806`03f52689 488bd6          mov     rdx,rsi
+fffff806`03f5268c f0480fc70f      lock cmpxchg16b oword ptr [rdi]
+fffff806`03f52691 4c8bf0          mov     r14,rax
+fffff806`03f52694 4889442430      mov     qword ptr [rsp+30h],rax
+fffff806`03f52699 488bf2          mov     rsi,rdx
+fffff806`03f5269c 4889542438      mov     qword ptr [rsp+38h],rdx
+fffff806`03f526a1 0f854b030000    jne     nt!ObpReferenceObjectByHandleWithTag+0x4a2 (fffff806`03f529f2)
+fffff806`03f526a7 488bd8          mov     rbx,rax
+fffff806`03f526aa 48d1eb          shr     rbx,1
+fffff806`03f526ad 6683fb10        cmp     bx,10h
+fffff806`03f526b1 0f84eb030000    je      nt!ObpReferenceObjectByHandleWithTag+0x552 (fffff806`03f52aa2)
+fffff806`03f526b7 488bd8          mov     rbx,rax
+fffff806`03f526ba 48c1fb10        sar     rbx,10h
+fffff806`03f526be 4883e3f0        and     rbx,0FFFFFFFFFFFFFFF0h
+fffff806`03f526c2 833d4749eaff00  cmp     dword ptr [nt!ObpTraceFlags (fffff806`03df7010)],0
+fffff806`03f526c9 0f85de061300    jne     nt!ObpReferenceObjectByHandleWithTag+0x13085d (fffff806`04082dad)
+fffff806`03f526cf 488b9424a0000000 mov     rdx,qword ptr [rsp+0A0h]
+fffff806`03f526d7 4c8d0d222996ff  lea     r9,[nt!MmFreeIndependentPages <PERF> (nt+0x0) (fffff806`038b5000)]
+fffff806`03f526de 488bc3          mov     rax,rbx
+fffff806`03f526e1 48c1e808        shr     rax,8
+fffff806`03f526e5 324318          xor     al,byte ptr [rbx+18h]
+fffff806`03f526e8 3205ea5eeaff    xor     al,byte ptr [nt!ObHeaderCookie (fffff806`03df85d8)]
+fffff806`03f526ee 4885d2          test    rdx,rdx
+fffff806`03f526f1 0f8417010000    je      nt!ObpReferenceObjectByHandleWithTag+0x2be (fffff806`03f5280e)
+fffff806`03f526f7 384228          cmp     byte ptr [rdx+28h],al
+fffff806`03f526fa 0f850e010000    jne     nt!ObpReferenceObjectByHandleWithTag+0x2be (fffff806`03f5280e)
+fffff806`03f52700 81e6ffffff01    and     esi,1FFFFFFh
+fffff806`03f52706 80bc24a800000000 cmp     byte ptr [rsp+0A8h],0
+fffff806`03f5270e 744a            je      nt!ObpReferenceObjectByHandleWithTag+0x20a (fffff806`03f5275a)
+fffff806`03f52710 8bc6            mov     eax,esi
+fffff806`03f52712 f7d0            not     eax
+fffff806`03f52714 85842498000000  test    dword ptr [rsp+98h],eax
+fffff806`03f5271b 0f85e3020000    jne     nt!ObpReferenceObjectByHandleWithTag+0x4b4 (fffff806`03f52a04)
+fffff806`03f52721 0fb6431a        movzx   eax,byte ptr [rbx+1Ah]
+fffff806`03f52725 a840            test    al,40h
+fffff806`03f52727 7431            je      nt!ObpReferenceObjectByHandleWithTag+0x20a (fffff806`03f5275a)
+fffff806`03f52729 0fb6c0          movzx   eax,al
+fffff806`03f5272c 488bcb          mov     rcx,rbx
+fffff806`03f5272f 83e07f          and     eax,7Fh
+fffff806`03f52732 420fb68408c0b44100 movzx eax,byte ptr [rax+r9+41B4C0h]
+fffff806`03f5273b 482bc8          sub     rcx,rax
+fffff806`03f5273e 488b01          mov     rax,qword ptr [rcx]
+fffff806`03f52741 80781800        cmp     byte ptr [rax+18h],0
+fffff806`03f52745 7413            je      nt!ObpReferenceObjectByHandleWithTag+0x20a (fffff806`03f5275a)
+fffff806`03f52747 488b4010        mov     rax,qword ptr [rax+10h]
+fffff806`03f5274b 4883f801        cmp     rax,1
+fffff806`03f5274f 0f8478061300    je      nt!ObpReferenceObjectByHandleWithTag+0x13087d (fffff806`04082dcd)
+fffff806`03f52755 4c8b742430      mov     r14,qword ptr [rsp+30h]
+fffff806`03f5275a 488b8424c0000000 mov     rax,qword ptr [rsp+0C0h]
+fffff806`03f52762 49c1fe11        sar     r14,11h
+fffff806`03f52766 4885c0          test    rax,rax
+fffff806`03f52769 0f85d3000000    jne     nt!ObpReferenceObjectByHandleWithTag+0x2f2 (fffff806`03f52842)
+fffff806`03f5276f 41f6c604        test    r14b,4
+fffff806`03f52773 0f85dd000000    jne     nt!ObpReferenceObjectByHandleWithTag+0x306 (fffff806`03f52856)
+fffff806`03f52779 4532d2          xor     r10b,r10b
+fffff806`03f5277c 4c8b9c24c8000000 mov     r11,qword ptr [rsp+0C8h]
+fffff806`03f52784 4d85ed          test    r13,r13
+fffff806`03f52787 0f85b2010000    jne     nt!ObpReferenceObjectByHandleWithTag+0x3ef (fffff806`03f5293f)
+fffff806`03f5278d 4584d2          test    r10b,r10b
+fffff806`03f52790 0f854d061300    jne     nt!ObpReferenceObjectByHandleWithTag+0x130893 (fffff806`04082de3)
+fffff806`03f52796 80bc24b800000000 cmp     byte ptr [rsp+0B8h],0
+fffff806`03f5279e 488d4330        lea     rax,[rbx+30h]
+fffff806`03f527a2 49890424        mov     qword ptr [r12],rax
+fffff806`03f527a6 0f85c5020000    jne     nt!ObpReferenceObjectByHandleWithTag+0x521 (fffff806`03f52a71)
+fffff806`03f527ac 498bcf          mov     rcx,r15
+fffff806`03f527af e8dc6da7ff      call    nt!KeLeaveCriticalRegionThread (fffff806`039c9590)
+fffff806`03f527b4 33c0            xor     eax,eax
+fffff806`03f527b6 4c8b742448      mov     r14,qword ptr [rsp+48h]
+fffff806`03f527bb 488b742450      mov     rsi,qword ptr [rsp+50h]
+fffff806`03f527c0 4883c458        add     rsp,58h
+fffff806`03f527c4 415f            pop     r15
+fffff806`03f527c6 415d            pop     r13
+fffff806`03f527c8 415c            pop     r12
+fffff806`03f527ca 5f              pop     rdi
+fffff806`03f527cb 5d              pop     rbp
+fffff806`03f527cc 5b              pop     rbx
+fffff806`03f527cd c3              ret
+fffff806`03f527ce 4883fdff        cmp     rbp,0FFFFFFFFFFFFFFFFh
+fffff806`03f527d2 0f848b010000    je      nt!ObpReferenceObjectByHandleWithTag+0x413 (fffff806`03f52963)
+fffff806`03f527d8 4883fdfe        cmp     rbp,0FFFFFFFFFFFFFFFEh
+fffff806`03f527dc 0f84f9000000    je      nt!ObpReferenceObjectByHandleWithTag+0x38b (fffff806`03f528db)
+fffff806`03f527e2 4584c9          test    r9b,r9b
+fffff806`03f527e5 0f8577051300    jne     nt!ObpReferenceObjectByHandleWithTag+0x130812 (fffff806`04082d62)
+fffff806`03f527eb 4c8b0deed7d7ff  mov     r9,qword ptr [nt!ObpKernelHandleTable (fffff806`03ccffe0)]
+fffff806`03f527f2 4881f500000080  xor     rbp,0FFFFFFFF80000000h
+fffff806`03f527f9 6641ff8fe4010000 dec     word ptr [r15+1E4h]
+fffff806`03f52801 4c898c24c8000000 mov     qword ptr [rsp+0C8h],r9
+fffff806`03f52809 e91afeffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0xd8 (fffff806`03f52628)
+fffff806`03f5280e 0fb6c8          movzx   ecx,al
+fffff806`03f52811 4d8b84c9603c5400 mov     r8,qword ptr [r9+rcx*8+543C60h]
+fffff806`03f52819 4d85c0          test    r8,r8
+fffff806`03f5281c 0f84f7051300    je      nt!ObpReferenceObjectByHandleWithTag+0x1308c9 (fffff806`04082e19)
+fffff806`03f52822 4c3b059f5beaff  cmp     r8,qword ptr [nt!MmBadPointer (fffff806`03df83c8)]
+fffff806`03f52829 0f84ea051300    je      nt!ObpReferenceObjectByHandleWithTag+0x1308c9 (fffff806`04082e19)
+fffff806`03f5282f 4885d2          test    rdx,rdx
+fffff806`03f52832 0f84c8feffff    je      nt!ObpReferenceObjectByHandleWithTag+0x1b0 (fffff806`03f52700)
+fffff806`03f52838 bf240000c0      mov     edi,0C0000024h
+fffff806`03f5283d e9c7010000      jmp     nt!ObpReferenceObjectByHandleWithTag+0x4b9 (fffff806`03f52a09)
+fffff806`03f52842 4183e607        and     r14d,7
+fffff806`03f52846 897004          mov     dword ptr [rax+4],esi   rsi
+fffff806`03f52849 448930          mov     dword ptr [rax],r14d
+fffff806`03f5284c 41f6c604        test    r14b,4
+fffff806`03f52850 0f8423ffffff    je      nt!ObpReferenceObjectByHandleWithTag+0x229 (fffff806`03f52779)
+fffff806`03f52856 41b201          mov     r10b,1
+fffff806`03f52859 e91effffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x22c (fffff806`03f5277c)
+fffff806`03f5285e 6690            nop
+fffff806`03f52860 0f0d0f          prefetchw [rdi]
+fffff806`03f52863 4c8b07          mov     r8,qword ptr [rdi]
+fffff806`03f52866 41f6c001        test    r8b,1
+fffff806`03f5286a 0f841a020000    je      nt!ObpReferenceObjectByHandleWithTag+0x53a (fffff806`03f52a8a)
+fffff806`03f52870 498d48ff        lea     rcx,[r8-1]
+fffff806`03f52874 498bc0          mov     rax,r8
+fffff806`03f52877 f0480fb10f      lock cmpxchg qword ptr [rdi],rcx
+fffff806`03f5287c 75e2            jne     nt!ObpReferenceObjectByHandleWithTag+0x310 (fffff806`03f52860)
+fffff806`03f5287e 488b1f          mov     rbx,qword ptr [rdi]
+fffff806`03f52881 488bcf          mov     rcx,rdi
+fffff806`03f52884 0f1007          movups  xmm0,xmmword ptr [rdi]
+fffff806`03f52887 48c1fb10        sar     rbx,10h
+fffff806`03f5288b 4883e3f0        and     rbx,0FFFFFFFFFFFFFFF0h
+fffff806`03f5288f 0f11442430      movups  xmmword ptr [rsp+30h],xmm0
+fffff806`03f52894 e8c73a99ff      call    nt!ExSlowReplenishHandleTableEntry (fffff806`038e6360)
+fffff806`03f52899 ffc0            inc     eax
+fffff806`03f5289b 4863c8          movsxd  rcx,eax
+fffff806`03f5289e 488bc1          mov     rax,rcx
+fffff806`03f528a1 f0480fc103      lock xadd qword ptr [rbx],rax
+fffff806`03f528a6 4885c0          test    rax,rax
+fffff806`03f528a9 0f8ee3041300    jle     nt!ObpReferenceObjectByHandleWithTag+0x130842 (fffff806`04082d92)
+fffff806`03f528af b801000000      mov     eax,1
+fffff806`03f528b4 f0480fc107      lock xadd qword ptr [rdi],rax
+fffff806`03f528b9 498d4930        lea     rcx,[r9+30h]
+fffff806`03f528bd f0830c2400      lock or dword ptr [rsp],0
+fffff806`03f528c2 48833900        cmp     qword ptr [rcx],0
+fffff806`03f528c6 0f8549020000    jne     nt!ObpReferenceObjectByHandleWithTag+0x5c5 (fffff806`03f52b15)
+fffff806`03f528cc 488b742438      mov     rsi,qword ptr [rsp+38h]
+fffff806`03f528d1 4c8b742430      mov     r14,qword ptr [rsp+30h]
+fffff806`03f528d6 e9e7fdffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x172 (fffff806`03f526c2)
+fffff806`03f528db 483b1d165aeaff  cmp     rbx,qword ptr [nt!PsThreadType (fffff806`03df82f8)]
+fffff806`03f528e2 0f8539020000    jne     nt!ObpReferenceObjectByHandleWithTag+0x5d1 (fffff806`03f52b21)
+fffff806`03f528e8 f7c20000e0ff    test    edx,0FFE00000h
+fffff806`03f528ee 0f8524041300    jne     nt!ObpReferenceObjectByHandleWithTag+0x1307c8 (fffff806`04082d18)
+fffff806`03f528f4 488b8424c0000000 mov     rax,qword ptr [rsp+0C0h]
+fffff806`03f528fc 4885c0          test    rax,rax
+fffff806`03f528ff 0f852a020000    jne     nt!ObpReferenceObjectByHandleWithTag+0x5df (fffff806`03f52b2f)
+fffff806`03f52905 390d0547eaff    cmp     dword ptr [nt!ObpTraceFlags (fffff806`03df7010)],ecx
+fffff806`03f5290b bb01000000      mov     ebx,1
+fffff806`03f52910 0f8515041300    jne     nt!ObpReferenceObjectByHandleWithTag+0x1307db (fffff806`04082d2b)
+fffff806`03f52916 f0490fc15fd0    lock xadd qword ptr [r15-30h],rbx
+fffff806`03f5291c 48ffc3          inc     rbx
+fffff806`03f5291f 4883fb01        cmp     rbx,1
+fffff806`03f52923 0f8e20041300    jle     nt!ObpReferenceObjectByHandleWithTag+0x1307f9 (fffff806`04082d49)
+fffff806`03f52929 4d893c24        mov     qword ptr [r12],r15
+fffff806`03f5292d 8bc1            mov     eax,ecx
+fffff806`03f5292f e982feffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x266 (fffff806`03f527b6)
+fffff806`03f52934 33c0            xor     eax,eax
+fffff806`03f52936 49894500        mov     qword ptr [r13],rax
+fffff806`03f5293a e970fcffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x5f (fffff806`03f525af)
+fffff806`03f5293f 41837b0400      cmp     dword ptr [r11+4],0
+fffff806`03f52944 0f8443feffff    je      nt!ObpReferenceObjectByHandleWithTag+0x23d (fffff806`03f5278d)
+fffff806`03f5294a 488bd5          mov     rdx,rbp
+fffff806`03f5294d 498bcb          mov     rcx,r11
+fffff806`03f52950 e8cb0c2300      call    nt!ExpGetHandleExtraInfo (fffff806`04183620)
+fffff806`03f52955 4885c0          test    rax,rax
+fffff806`03f52958 0f842ffeffff    je      nt!ObpReferenceObjectByHandleWithTag+0x23d (fffff806`03f5278d)
+fffff806`03f5295e e974041300      jmp     nt!ObpReferenceObjectByHandleWithTag+0x130887 (fffff806`04082dd7)
+fffff806`03f52963 483b1d6659eaff  cmp     rbx,qword ptr [nt!PsProcessType (fffff806`03df82d0)]
+fffff806`03f5296a 0f85c6000000    jne     nt!ObpReferenceObjectByHandleWithTag+0x4e6 (fffff806`03f52a36)
+fffff806`03f52970 498bbfb8000000  mov     rdi,qword ptr [r15+0B8h]
+fffff806`03f52977 f7c20000e0ff    test    edx,0FFE00000h
+fffff806`03f5297d 0f8541031300    jne     nt!ObpReferenceObjectByHandleWithTag+0x130774 (fffff806`04082cc4)
+fffff806`03f52983 488b8424c0000000 mov     rax,qword ptr [rsp+0C0h]
+fffff806`03f5298b 4885c0          test    rax,rax
+fffff806`03f5298e 0f85b7000000    jne     nt!ObpReferenceObjectByHandleWithTag+0x4fb (fffff806`03f52a4b)
+fffff806`03f52994 390d7646eaff    cmp     dword ptr [nt!ObpTraceFlags (fffff806`03df7010)],ecx
+fffff806`03f5299a bb01000000      mov     ebx,1
+fffff806`03f5299f 0f8532031300    jne     nt!ObpReferenceObjectByHandleWithTag+0x130787 (fffff806`04082cd7)
+fffff806`03f529a5 f0480fc15fd0    lock xadd qword ptr [rdi-30h],rbx
+fffff806`03f529ab 48ffc3          inc     rbx
+fffff806`03f529ae 4883fb01        cmp     rbx,1
+fffff806`03f529b2 0f8e3d031300    jle     nt!ObpReferenceObjectByHandleWithTag+0x1307a5 (fffff806`04082cf5)
+fffff806`03f529b8 49893c24        mov     qword ptr [r12],rdi
+fffff806`03f529bc 8bc1            mov     eax,ecx
+fffff806`03f529be e9f3fdffff      jmp     nt!ObpReferenceObjectByHandleWithTag+0x266 (fffff806`03f527b6)
+fffff806`03f529c3 4d8bc6          mov     r8,r14
+fffff806`03f529c6 488bd7          mov     rdx,rdi
+fffff806`03f529c9 498bc9          mov     rcx,r9
+fffff806`03f529cc e833e3f8ff      call    nt!ExpBlockOnLockedHandleEntry (fffff806`03ee0d04)
+fffff806`03f529d1 0f0d0f          prefetchw [rdi]
+fffff806`03f529d4 488b07          mov     rax,qword ptr [rdi]
+fffff806`03f529d7 488b7708        mov     rsi,qword ptr [rdi+8]
+fffff806`03f529db 4c8b8c24c8000000 mov     r9,qword ptr [rsp+0C8h]
+fffff806`03f529e3 4889442430      mov     qword ptr [rsp+30h],rax
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1: kd> dt _EPROCESS
+ntdll!_EPROCESS
+   +0x000 Pcb              : _KPROCESS
+   +0x2d8 ProcessLock      : _EX_PUSH_LOCK
+   +0x2e0 UniqueProcessId  : Ptr64 Void
+   +0x2e8 ActiveProcessLinks : _LIST_ENTRY
+   +0x2f8 RundownProtect   : _EX_RUNDOWN_REF
+   +0x300 Flags2           : Uint4B
+   +0x300 JobNotReallyActive : Pos 0, 1 Bit
+   +0x300 AccountingFolded : Pos 1, 1 Bit
+   +0x300 NewProcessReported : Pos 2, 1 Bit
+   +0x300 ExitProcessReported : Pos 3, 1 Bit
+   +0x300 ReportCommitChanges : Pos 4, 1 Bit
+   +0x300 LastReportMemory : Pos 5, 1 Bit
+   +0x300 ForceWakeCharge  : Pos 6, 1 Bit
+   +0x300 CrossSessionCreate : Pos 7, 1 Bit
+   +0x300 NeedsHandleRundown : Pos 8, 1 Bit
+   +0x300 RefTraceEnabled  : Pos 9, 1 Bit
+   +0x300 PicoCreated      : Pos 10, 1 Bit
+   +0x300 EmptyJobEvaluated : Pos 11, 1 Bit
+   +0x300 DefaultPagePriority : Pos 12, 3 Bits
+   +0x300 PrimaryTokenFrozen : Pos 15, 1 Bit
+   +0x300 ProcessVerifierTarget : Pos 16, 1 Bit
+   +0x300 RestrictSetThreadContext : Pos 17, 1 Bit
+   +0x300 AffinityPermanent : Pos 18, 1 Bit
+   +0x300 AffinityUpdateEnable : Pos 19, 1 Bit
+   +0x300 PropagateNode    : Pos 20, 1 Bit
+   +0x300 ExplicitAffinity : Pos 21, 1 Bit
+   +0x300 ProcessExecutionState : Pos 22, 2 Bits
+   +0x300 EnableReadVmLogging : Pos 24, 1 Bit
+   +0x300 EnableWriteVmLogging : Pos 25, 1 Bit
+   +0x300 FatalAccessTerminationRequested : Pos 26, 1 Bit
+   +0x300 DisableSystemAllowedCpuSet : Pos 27, 1 Bit
+   +0x300 ProcessStateChangeRequest : Pos 28, 2 Bits
+   +0x300 ProcessStateChangeInProgress : Pos 30, 1 Bit
+   +0x300 InPrivate        : Pos 31, 1 Bit
+   +0x304 Flags            : Uint4B
+   +0x304 CreateReported   : Pos 0, 1 Bit
+   +0x304 NoDebugInherit   : Pos 1, 1 Bit
+   +0x304 ProcessExiting   : Pos 2, 1 Bit
+   +0x304 ProcessDelete    : Pos 3, 1 Bit
+   +0x304 ManageExecutableMemoryWrites : Pos 4, 1 Bit
+   +0x304 VmDeleted        : Pos 5, 1 Bit
+   +0x304 OutswapEnabled   : Pos 6, 1 Bit
+   +0x304 Outswapped       : Pos 7, 1 Bit
+   +0x304 FailFastOnCommitFail : Pos 8, 1 Bit
+   +0x304 Wow64VaSpace4Gb  : Pos 9, 1 Bit
+   +0x304 AddressSpaceInitialized : Pos 10, 2 Bits
+   +0x304 SetTimerResolution : Pos 12, 1 Bit
+   +0x304 BreakOnTermination : Pos 13, 1 Bit
+   +0x304 DeprioritizeViews : Pos 14, 1 Bit
+   +0x304 WriteWatch       : Pos 15, 1 Bit
+   +0x304 ProcessInSession : Pos 16, 1 Bit
+   +0x304 OverrideAddressSpace : Pos 17, 1 Bit
+   +0x304 HasAddressSpace  : Pos 18, 1 Bit
+   +0x304 LaunchPrefetched : Pos 19, 1 Bit
+   +0x304 Background       : Pos 20, 1 Bit
+   +0x304 VmTopDown        : Pos 21, 1 Bit
+   +0x304 ImageNotifyDone  : Pos 22, 1 Bit
+   +0x304 PdeUpdateNeeded  : Pos 23, 1 Bit
+   +0x304 VdmAllowed       : Pos 24, 1 Bit
+   +0x304 ProcessRundown   : Pos 25, 1 Bit
+   +0x304 ProcessInserted  : Pos 26, 1 Bit
+   +0x304 DefaultIoPriority : Pos 27, 3 Bits
+   +0x304 ProcessSelfDelete : Pos 30, 1 Bit
+   +0x304 SetTimerResolutionLink : Pos 31, 1 Bit
+   +0x308 CreateTime       : _LARGE_INTEGER
+   +0x310 ProcessQuotaUsage : [2] Uint8B
+   +0x320 ProcessQuotaPeak : [2] Uint8B
+   +0x330 PeakVirtualSize  : Uint8B
+   +0x338 VirtualSize      : Uint8B
+   +0x340 SessionProcessLinks : _LIST_ENTRY
+   +0x350 ExceptionPortData : Ptr64 Void
+   +0x350 ExceptionPortValue : Uint8B
+   +0x350 ExceptionPortState : Pos 0, 3 Bits
+   +0x358 Token            : _EX_FAST_REF
+   +0x360 MmReserved       : Uint8B
+   +0x368 AddressCreationLock : _EX_PUSH_LOCK
+   +0x370 PageTableCommitmentLock : _EX_PUSH_LOCK
+   +0x378 RotateInProgress : Ptr64 _ETHREAD
+   +0x380 ForkInProgress   : Ptr64 _ETHREAD
+   +0x388 CommitChargeJob  : Ptr64 _EJOB
+   +0x390 CloneRoot        : _RTL_AVL_TREE
+   +0x398 NumberOfPrivatePages : Uint8B
+   +0x3a0 NumberOfLockedPages : Uint8B
+   +0x3a8 Win32Process     : Ptr64 Void
+   +0x3b0 Job              : Ptr64 _EJOB
+   +0x3b8 SectionObject    : Ptr64 Void
+   +0x3c0 SectionBaseAddress : Ptr64 Void
+   +0x3c8 Cookie           : Uint4B
+   +0x3d0 WorkingSetWatch  : Ptr64 _PAGEFAULT_HISTORY
+   +0x3d8 Win32WindowStation : Ptr64 Void
+   +0x3e0 InheritedFromUniqueProcessId : Ptr64 Void
+   +0x3e8 Spare0           : Ptr64 Void
+   +0x3f0 OwnerProcessId   : Uint8B
+   +0x3f8 Peb              : Ptr64 _PEB
+   +0x400 Session          : Ptr64 _MM_SESSION_SPACE
+   +0x408 Spare1           : Ptr64 Void
+   +0x410 QuotaBlock       : Ptr64 _EPROCESS_QUOTA_BLOCK
+   +0x418 ObjectTable      : Ptr64 _HANDLE_TABLE
+   +0x420 DebugPort        : Ptr64 Void
+   +0x428 WoW64Process     : Ptr64 _EWOW64PROCESS
+   +0x430 DeviceMap        : Ptr64 Void
+   +0x438 EtwDataSource    : Ptr64 Void
+   +0x440 PageDirectoryPte : Uint8B
+   +0x448 ImageFilePointer : Ptr64 _FILE_OBJECT
+   +0x450 ImageFileName    : [15] UChar
+   +0x45f PriorityClass    : UChar
+   +0x460 SecurityPort     : Ptr64 Void
+   +0x468 SeAuditProcessCreationInfo : _SE_AUDIT_PROCESS_CREATION_INFO
+   +0x470 JobLinks         : _LIST_ENTRY
+   +0x480 HighestUserAddress : Ptr64 Void
+   +0x488 ThreadListHead   : _LIST_ENTRY
+   +0x498 ActiveThreads    : Uint4B
+   +0x49c ImagePathHash    : Uint4B
+   +0x4a0 DefaultHardErrorProcessing : Uint4B
+   +0x4a4 LastThreadExitStatus : Int4B
+   +0x4a8 PrefetchTrace    : _EX_FAST_REF
+   +0x4b0 LockedPagesList  : Ptr64 Void
+   +0x4b8 ReadOperationCount : _LARGE_INTEGER
+   +0x4c0 WriteOperationCount : _LARGE_INTEGER
+   +0x4c8 OtherOperationCount : _LARGE_INTEGER
+   +0x4d0 ReadTransferCount : _LARGE_INTEGER
+   +0x4d8 WriteTransferCount : _LARGE_INTEGER
+   +0x4e0 OtherTransferCount : _LARGE_INTEGER
+   +0x4e8 CommitChargeLimit : Uint8B
+   +0x4f0 CommitCharge     : Uint8B
+   +0x4f8 CommitChargePeak : Uint8B
+   +0x500 Vm               : _MMSUPPORT_FULL
+   +0x610 MmProcessLinks   : _LIST_ENTRY
+   +0x620 ModifiedPageCount : Uint4B
+   +0x624 ExitStatus       : Int4B
+   +0x628 VadRoot          : _RTL_AVL_TREE
+   +0x630 VadHint          : Ptr64 Void
+   +0x638 VadCount         : Uint8B
+   +0x640 VadPhysicalPages : Uint8B
+   +0x648 VadPhysicalPagesLimit : Uint8B
+   +0x650 AlpcContext      : _ALPC_PROCESS_CONTEXT
+   +0x670 TimerResolutionLink : _LIST_ENTRY
+   +0x680 TimerResolutionStackRecord : Ptr64 _PO_DIAG_STACK_RECORD
+   +0x688 RequestedTimerResolution : Uint4B
+   +0x68c SmallestTimerResolution : Uint4B
+   +0x690 ExitTime         : _LARGE_INTEGER
+   +0x698 InvertedFunctionTable : Ptr64 _INVERTED_FUNCTION_TABLE
+   +0x6a0 InvertedFunctionTableLock : _EX_PUSH_LOCK
+   +0x6a8 ActiveThreadsHighWatermark : Uint4B
+   +0x6ac LargePrivateVadCount : Uint4B
+   +0x6b0 ThreadListLock   : _EX_PUSH_LOCK
+   +0x6b8 WnfContext       : Ptr64 Void
+   +0x6c0 ServerSilo       : Ptr64 _EJOB
+   +0x6c8 SignatureLevel   : UChar
+   +0x6c9 SectionSignatureLevel : UChar
+   +0x6ca Protection       : _PS_PROTECTION
+   +0x6cb HangCount        : Pos 0, 3 Bits
+   +0x6cb GhostCount       : Pos 3, 3 Bits
+   +0x6cb PrefilterException : Pos 6, 1 Bit
+   +0x6cc Flags3           : Uint4B
+   +0x6cc Minimal          : Pos 0, 1 Bit
+   +0x6cc ReplacingPageRoot : Pos 1, 1 Bit
+   +0x6cc Crashed          : Pos 2, 1 Bit
+   +0x6cc JobVadsAreTracked : Pos 3, 1 Bit
+   +0x6cc VadTrackingDisabled : Pos 4, 1 Bit
+   +0x6cc AuxiliaryProcess : Pos 5, 1 Bit
+   +0x6cc SubsystemProcess : Pos 6, 1 Bit
+   +0x6cc IndirectCpuSets  : Pos 7, 1 Bit
+   +0x6cc RelinquishedCommit : Pos 8, 1 Bit
+   +0x6cc HighGraphicsPriority : Pos 9, 1 Bit
+   +0x6cc CommitFailLogged : Pos 10, 1 Bit
+   +0x6cc ReserveFailLogged : Pos 11, 1 Bit
+   +0x6cc SystemProcess    : Pos 12, 1 Bit
+   +0x6cc HideImageBaseAddresses : Pos 13, 1 Bit
+   +0x6cc AddressPolicyFrozen : Pos 14, 1 Bit
+   +0x6cc ProcessFirstResume : Pos 15, 1 Bit
+   +0x6cc ForegroundExternal : Pos 16, 1 Bit
+   +0x6cc ForegroundSystem : Pos 17, 1 Bit
+   +0x6cc HighMemoryPriority : Pos 18, 1 Bit
+   +0x6cc EnableProcessSuspendResumeLogging : Pos 19, 1 Bit
+   +0x6cc EnableThreadSuspendResumeLogging : Pos 20, 1 Bit
+   +0x6cc SecurityDomainChanged : Pos 21, 1 Bit
+   +0x6cc SecurityFreezeComplete : Pos 22, 1 Bit
+   +0x6cc VmProcessorHost  : Pos 23, 1 Bit
+   +0x6d0 DeviceAsid       : Int4B
+   +0x6d8 SvmData          : Ptr64 Void
+   +0x6e0 SvmProcessLock   : _EX_PUSH_LOCK
+   +0x6e8 SvmLock          : Uint8B
+   +0x6f0 SvmProcessDeviceListHead : _LIST_ENTRY
+   +0x700 LastFreezeInterruptTime : Uint8B
+   +0x708 DiskCounters     : Ptr64 _PROCESS_DISK_COUNTERS
+   +0x710 PicoContext      : Ptr64 Void
+   +0x718 EnclaveTable     : Ptr64 Void
+   +0x720 EnclaveNumber    : Uint8B
+   +0x728 EnclaveLock      : _EX_PUSH_LOCK
+   +0x730 HighPriorityFaultsAllowed : Uint4B
+   +0x738 EnergyContext    : Ptr64 _PO_PROCESS_ENERGY_CONTEXT
+   +0x740 VmContext        : Ptr64 Void
+   +0x748 SequenceNumber   : Uint8B
+   +0x750 CreateInterruptTime : Uint8B
+   +0x758 CreateUnbiasedInterruptTime : Uint8B
+   +0x760 TotalUnbiasedFrozenTime : Uint8B
+   +0x768 LastAppStateUpdateTime : Uint8B
+   +0x770 LastAppStateUptime : Pos 0, 61 Bits
+   +0x770 LastAppState     : Pos 61, 3 Bits
+   +0x778 SharedCommitCharge : Uint8B
+   +0x780 SharedCommitLock : _EX_PUSH_LOCK
+   +0x788 SharedCommitLinks : _LIST_ENTRY
+   +0x798 AllowedCpuSets   : Uint8B
+   +0x7a0 DefaultCpuSets   : Uint8B
+   +0x798 AllowedCpuSetsIndirect : Ptr64 Uint8B
+   +0x7a0 DefaultCpuSetsIndirect : Ptr64 Uint8B
+   +0x7a8 DiskIoAttribution : Ptr64 Void
+   +0x7b0 DxgProcess       : Ptr64 Void
+   +0x7b8 Win32KFilterSet  : Uint4B
+   +0x7c0 ProcessTimerDelay : _PS_INTERLOCKED_TIMER_DELAY_VALUES
+   +0x7c8 KTimerSets       : Uint4B
+   +0x7cc KTimer2Sets      : Uint4B
+   +0x7d0 ThreadTimerSets  : Uint4B
+   +0x7d8 VirtualTimerListLock : Uint8B
+   +0x7e0 VirtualTimerListHead : _LIST_ENTRY
+   +0x7f0 WakeChannel      : _WNF_STATE_NAME
+   +0x7f0 WakeInfo         : _PS_PROCESS_WAKE_INFORMATION
+   +0x820 MitigationFlags  : Uint4B
+   +0x820 MitigationFlagsValues : <unnamed-tag>
+   +0x824 MitigationFlags2 : Uint4B
+   +0x824 MitigationFlags2Values : <unnamed-tag>
+   +0x828 PartitionObject  : Ptr64 Void
+   +0x830 SecurityDomain   : Uint8B
+   +0x838 ParentSecurityDomain : Uint8B
+   +0x840 CoverageSamplerContext : Ptr64 Void
+   +0x848 MmHotPatchContext : Ptr64 Void

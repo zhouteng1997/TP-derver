@@ -145,7 +145,7 @@ HANDLE GetCurrentProcessID()
 BOOLEAN IsMyProcess()
 {
 	PEPROCESS Process = PsGetCurrentProcess();
-	if (_strnicmp("150330575.exe", (char*)PsGetProcessImageFileName(Process), strlen("150330575.exe")) == 0)
+	if (_strnicmp("8264.exe", (char*)PsGetProcessImageFileName(Process), strlen("8264.exe")) == 0)
 	{
 		return TRUE;
 	}

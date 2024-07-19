@@ -1,0 +1,27 @@
+驱动 ObReferenceObjectByHandle info 地址 FFFF828013606730  processObject 地址 FFFF828013606728 句柄为 0000000000000220 MyWDF!通过句柄获取对象+0x40:
+
+1.定位修改的物理地址 info 地址 FFFF828013606730,权限位置为GrantedAccess=FFFF828013606734;
+
+2.查看内存是否已修改
+dt _OBJECT_HANDLE_INFORMATION FFFF828013606730
+
+3.设置写断点，看是谁修改了它 
+kd> ba w4 FFFF828013606734
+kd> bl
+     0 e Disable Clear  ffff8280`13606734 w 4 0001 (0001) 
+	 
+修改位置
+fffff806`03f52846 897004          mov     dword ptr [rax+4],esi
+
+//查看代码层级
+kd> k   
+方法 
+nt!ObpReferenceObjectByHandleWithTag:  
+nt!ObReferenceObjectByHandle
+
+
+4.开始倒叙排查   （运行后，内存修改）
+nt!ObReferenceObjectByHandle->fffff806`03f52539 e812000000      call    nt!ObpReferenceObjectByHandleWithTag (fffff806`03f52550)
+nt!ObpReferenceObjectByHandleWithTag 太长了，而且逻辑复杂，爱乱跳，使用二分法
+去中间值
+

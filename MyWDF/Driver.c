@@ -8,6 +8,7 @@
 #include "遍历对象回调钩子.h"
 #include "过掉对象钩子保护.h"
 #include "通过句柄获取对象.h"
+#include "遍历进程的句柄.h"
 
 #define 写测试 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x803, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 #define 读测试 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x804, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
@@ -28,6 +29,7 @@
 #define IO_清空需提权的PID CTL_CODE(FILE_DEVICE_UNKNOWN, 0x813, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 
 #define IO_通过句柄获取对象 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x820, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
+#define IO_通过进程遍历句柄 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x821, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 
 VOID DriverUnload(PDRIVER_OBJECT DriverObject) {
 	UNREFERENCED_PARAMETER(DriverObject);
@@ -87,6 +89,7 @@ NTSTATUS IRP_IO_添加受保护的PID(PIRP pirp) {
 	}
 	return STATUS_SUCCESS;
 }
+
 NTSTATUS IRP_IO_删除受保护的PID(PIRP pirp) {
 	PIO_STACK_LOCATION irpStack;
 	irpStack = IoGetCurrentIrpStackLocation(pirp);//获取应用层传来的参数
@@ -145,7 +148,6 @@ NTSTATUS IRP_IO_清空需提权的PID(PIRP pirp) {
 	return STATUS_SUCCESS;
 }
 
-
 NTSTATUS IRP_CALL(PDEVICE_OBJECT DriverObject, PIRP pirp) {
 
 	UNREFERENCED_PARAMETER(DriverObject);//一个无效宏
@@ -195,6 +197,8 @@ NTSTATUS IRP_CALL(PDEVICE_OBJECT DriverObject, PIRP pirp) {
 			return IRP_WritePVirtualMemory(pirp);
 		case IO_通过句柄获取对象:
 			return IRP_通过句柄获取对象(pirp);
+		case IO_通过进程遍历句柄:
+			return IRP_通过进程遍历句柄(pirp);
 		}
 	}
 	case IRP_MJ_CREATE:
