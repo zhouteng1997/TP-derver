@@ -109,8 +109,6 @@ void GetSystemHandleInformation(NTDEFS::SYSTEM_HANDLE_INFORMATION* pshi)//16
 	free(szType);
 }
 
-
-
 void 遍历进程句柄() // 定义遍历进程句柄的函数
 {
 	NTSTATUS status = STATUS_SUCCESS; // 初始化状态为成功
@@ -178,3 +176,5 @@ int main()
 	遍历进程句柄();
 	return 1;
 }
+
+
