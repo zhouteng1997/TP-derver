@@ -73,6 +73,7 @@ public slots:
 
     //创建2000句柄
     void on_createHandle_Button_clicked();
+
+    //遍历进程句柄
+    void on_emunHandlePID_Button_clicked();
 };
-
-

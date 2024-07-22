@@ -411,6 +411,19 @@ p, li { white-space: pre-wrap; }
      <string>创建2000句柄</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="emunHandlePID_Button">
+    <property name="geometry">
+     <rect>
+      <x>130</x>
+      <y>280</y>
+      <width>101</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>遍历进程句柄</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
