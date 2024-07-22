@@ -12,7 +12,11 @@ UINT_PTR RP(UINT_PTR base) {
 	}
 }
 
-UINT_PTR MyExpLookupHandleTableEntry(UINT_PTR tableCode, UINT_PTR handle) {
+//完整复刻 ExpLookupHandleTableEntry函数方法
+UINT_PTR MyExpLookupHandleTableEntry(UINT_PTR HANDLE_TABLE, UINT_PTR handle) {
+
+	UINT_PTR p_HANDLE_TABLE_TableCode = HANDLE_TABLE + Win10_HANDLE_TABLE_TableCode_OFFSET;
+	UINT_PTR tableCode = RP(p_HANDLE_TABLE_TableCode);
 	int index = tableCode & 0x3;
 	int 句柄 = handle & 0x0FFFFFFFFFFFFFFFC; //后两位清零
 	UINT_PTR r8 = tableCode;

@@ -5,12 +5,11 @@
 
 #define Win10_EPROCESS_HANDLE_TABLE_OFFSET 0x418; //来源于结构体  dt _EPROCESS  若需要知道来源，请全局搜索_EPROCESS
 #define Win10_HANDLE_TABLE_TableCode_OFFSET 0x008; //来源于结构体  dt _HANDLE_TABLE  若需要知道来源，请全局搜索_HANDLE_TABLE   +0x008 TableCode  : Uint8B
-//#define Win10_ExpLookupHandleTableEntry 0xfffff8063fb4fb50; //这个地址会在电脑中变化，调试时修改
-
+#define Win10_ExpLookupHandleTableEntry 0xfffff80542a86b10; //这个地址会在电脑中变化，调试时修改
 UINT_PTR RP(UINT_PTR base);
 UINT_PTR MyExpLookupHandleTableEntry(UINT_PTR tableCode, UINT_PTR handle);
 
-// Definition for _EXHANDLE
+//Definition for _EXHANDLE
 typedef union _EXHANDLE {
 	struct {
 		ULONG64 TagBits : 2;

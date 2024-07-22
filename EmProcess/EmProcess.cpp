@@ -170,8 +170,21 @@ void 遍历进程句柄() // 定义遍历进程句柄的函数
 }
 
 
+typedef union _EXHANDLE {
+	struct {
+		ULONG64 TagBits : 2;
+		ULONG64 Index : 30;
+	}name1;
+	PVOID GenericHandleOverlay;
+	ULONG64 Value;
+} EXHANDLE, * PEXHANDLE;
+
 int main()
 {
+	HANDLE handle = (HANDLE)0x4e;
+	EXHANDLE b;
+	b.Value = (ULONG64)handle;
+
 	//HANDLE hSourceProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, 38256);
 	遍历进程句柄();
 	return 1;

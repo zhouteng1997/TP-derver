@@ -2,10 +2,10 @@
 #include "win10结构体.h"
 
 
-//typedef PHANDLE_TABLE_ENTRY (*PExpLookupHandleTableEntry)(
-//	IN PHANDLE_TABLE HandleTable,//参数1是句柄表的地址，即 Tablecode，注意，这里 TableCode 的低位不能清要，函数里要判断句柄表结构的
-//	IN EXHANDLE handle//参数2是句柄值，PID 的值就是一个句柄值，调用 0perproces 打开一个进程得到的也是句柄值，前者用来索引全局句柄表，后者用来索引进程的句柯表。
-//);
+typedef PHANDLE_TABLE_ENTRY(*PExpLookupHandleTableEntry)(
+	IN PHANDLE_TABLE HandleTable,//参数1是句柄表的地址，即 Tablecode，注意，这里 TableCode 的低位不能清要，函数里要判断句柄表结构的
+	IN EXHANDLE handle//参数2是句柄值，PID 的值就是一个句柄值，调用 0perproces 打开一个进程得到的也是句柄值，前者用来索引全局句柄表，后者用来索引进程的句柯表。
+	);
 
 /*PExpLookupHandleTableEntry ExpLookupHandleTableEntry = (PExpLookupHandleTableEntry)0xfffff80072746b50;
 UINT_PTR handleObject=(UINT_PTR) ExpLookupHandleTableEntry((PHANDLE_TABLE)tableCode, *(EXHANDLE*)handle);*/
@@ -19,7 +19,7 @@ PVOID 通过句柄获取对象(IN HANDLE handle)
 	__debugbreak();
 	KdPrint(("驱动 ObReferenceObjectByHandle info 地址 %p  processObject 地址 %p 句柄为 %p ", &info, &processObject, handle));
 	status = ObReferenceObjectByHandle
-		(handle,//由我们自己传入进程句柄    rcx
+	(handle,//由我们自己传入进程句柄    rcx
 		0x0000,//EVENT ALL ACCESS 0x1FFFFF  rdx
 		*PsProcessType,//*ExEventObjectType,//*PsProcessType  r8
 		UserMode,   //  r9
@@ -32,11 +32,25 @@ PVOID 通过句柄获取对象(IN HANDLE handle)
 	PEPROCESS  currentProcess = PsGetCurrentProcess();
 	//指针指向HANDLE_TABLE
 	UINT_PTR currentProcessHandleTable = (UINT_PTR)currentProcess + Win10_EPROCESS_HANDLE_TABLE_OFFSET;
-	UINT_PTR p_HANDLE_TABLE_TableCode = RP(currentProcessHandleTable)+ Win10_HANDLE_TABLE_TableCode_OFFSET;
-	UINT_PTR tableCode = RP(p_HANDLE_TABLE_TableCode);
+	UINT_PTR HANDLE_TABLE = RP(currentProcessHandleTable);
 
-	UINT_PTR handleObject = MyExpLookupHandleTableEntry(tableCode, (UINT_PTR)handle);
-	handleObject;
+	__try {
+		PExpLookupHandleTableEntry ExpLookupHandleTableEntryZ = (PExpLookupHandleTableEntry)Win10_ExpLookupHandleTableEntry;
+		PHANDLE_TABLE a = (PHANDLE_TABLE)HANDLE_TABLE;
+		EXHANDLE b;
+		b.Value = (ULONG64)handle;
+		UINT_PTR handleObject1 = (UINT_PTR)ExpLookupHandleTableEntryZ(a, b);
+		handleObject1;
+
+
+		UINT_PTR handleObject2 = MyExpLookupHandleTableEntry(HANDLE_TABLE, (UINT_PTR)handle);
+		handleObject2;
+		KdPrint(("驱动 : SYS handleObject1 = %llX handleObject1 = %llX \n", handleObject1, handleObject1));
+	}
+	__except (1) {
+		KdPrint(("驱动:SYS 异常了  +++++++>>>>>>>>>\n\n"));
+	}
+
 	if (NT_SUCCESS(status))
 	{
 		//do something interesting here 如果调用成功 会走到这里
@@ -44,7 +58,7 @@ PVOID 通过句柄获取对象(IN HANDLE handle)
 		ObDereferenceObject(processObject);
 	}
 	__debugbreak();
-	KdPrint(("驱动 : SYS handleObject = %llX status = %X handle=%p object=%p \n", handleObject, status, handle, processObject));
+	//KdPrint(("驱动 : SYS handleObject = %llX status = %X handle=%p object=%p \n", handleObject, status, handle, processObject));
 
 
 	return processObject;

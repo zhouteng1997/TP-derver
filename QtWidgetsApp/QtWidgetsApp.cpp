@@ -771,8 +771,12 @@ HANDLE 进程句柄[0x20000];
 void 获取句柄对象(HANDLE 句柄) {
 	DWORD dwRetSize = 0;//返回字节数
 	HANDLE 传入数据 = 句柄;
+
 	//写入缓冲区
 	int OutBuf[1] = { 0 };//输出缓冲区
+
+	QString str = QString::number((ULONG64)传入数据);
+	QMessageBox::information(NULL, "Information", "句柄为:" + str);
 	DeviceIoControl(
 		DeviceHandle,//CreateFile打开驱动设备返回的句柄
 		IO_通过句柄获取对象,//控制码CTL_CODE
@@ -787,7 +791,7 @@ void 获取句柄对象(HANDLE 句柄) {
 		NULL);
 
 	//输出设备
-	QString str = QString::number(OutBuf[0]);
+	//QString str = QString::number(OutBuf[0]);
 	//  QMessageBox::information(NULL, "Information", "驱动 R0 返回给 R3 的数据为:" + str);
 	return;
 }
@@ -799,13 +803,12 @@ void  QtWidgetsApp::on_getHandle_Button_clicked() {
 	//QString text = textEdit->toPlainText();
 	//uint64_t number = text.toULongLong();
 	//获取句柄对象(进程句柄2);
-	for (int i = 0; i < 0x20000; i++) {
-		进程句柄[i]= OpenProcess(0x2000, false, GetCurrentProcessId());
-	}
-
+	//for (int i = 0; i < 0x20000; i++) {
+		进程句柄[0]= OpenProcess(0x2000, false, GetCurrentProcessId());
+	//}
 	获取句柄对象(进程句柄[0]);
-	QMessageBox::information(NULL, "Information", "第0个句柄结构解析完成，现在看第1FFFF个句柄" );
-	获取句柄对象(进程句柄[0x1FFFF]);
+	//QMessageBox::information(NULL, "Information", "第0个句柄结构解析完成，现在看第1FFFF个句柄" );
+	//获取句柄对象(进程句柄[0x1FFFF]);
 	return;
 }
 
