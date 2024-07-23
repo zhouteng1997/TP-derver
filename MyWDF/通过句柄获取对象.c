@@ -35,17 +35,17 @@ PVOID 通过句柄获取对象(IN HANDLE handle)
 	UINT_PTR HANDLE_TABLE = RP(currentProcessHandleTable);
 
 	__try {
-		PExpLookupHandleTableEntry ExpLookupHandleTableEntryZ = (PExpLookupHandleTableEntry)Win10_ExpLookupHandleTableEntry;
-		PHANDLE_TABLE a = (PHANDLE_TABLE)HANDLE_TABLE;
-		EXHANDLE b;
-		b.Value = (ULONG64)handle;
-		UINT_PTR handleObject1 = (UINT_PTR)ExpLookupHandleTableEntryZ(a, b);
-		handleObject1;
-
+		//一定要配置好Win10_ExpLookupHandleTableEntry，否则会蓝屏
+		//PExpLookupHandleTableEntry ExpLookupHandleTableEntryZ = (PExpLookupHandleTableEntry)Win10_ExpLookupHandleTableEntry;
+		//PHANDLE_TABLE a = (PHANDLE_TABLE)HANDLE_TABLE;
+		//EXHANDLE b;
+		//b.Value = (ULONG64)handle;
+		//UINT_PTR handleObject1 = (UINT_PTR)ExpLookupHandleTableEntryZ(a, b);
+		//handleObject1;
 
 		UINT_PTR handleObject2 = MyExpLookupHandleTableEntry(HANDLE_TABLE, (UINT_PTR)handle);
 		handleObject2;
-		KdPrint(("驱动 : SYS handleObject1 = %llX handleObject1 = %llX \n", handleObject1, handleObject1));
+		//KdPrint(("驱动 : SYS handleObject1 = %llX handleObject1 = %llX \n", handleObject1, handleObject1));
 	}
 	__except (1) {
 		KdPrint(("驱动:SYS 异常了  +++++++>>>>>>>>>\n\n"));

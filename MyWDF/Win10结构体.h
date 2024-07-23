@@ -31,13 +31,6 @@ typedef struct _HANDLE_TABLE_ENTRY {
 		LONGLONG VolatileLowValue;
 		LONGLONG LowValue;
 		HANDLE_TABLE_ENTRY_INFO* InfoTable;
-	}name1;
-	union {
-		LONGLONG HighValue;
-		struct _HANDLE_TABLE_ENTRY* NextFreeHandleEntry;
-		EXHANDLE LeafHandleValue;
-	}name2;
-	union {
 		LONGLONG RefCountField;
 		struct {
 			ULONG64 Unlocked : 1;
@@ -45,15 +38,18 @@ typedef struct _HANDLE_TABLE_ENTRY {
 			ULONG64 Attributes : 3;
 			ULONG64 ObjectPointerBits : 44;
 		}name1;
-	}name3;
+		UINT32 Spare2;
+	}name1;
 	union {
+		LONGLONG HighValue;
+		struct _HANDLE_TABLE_ENTRY* NextFreeHandleEntry;
+		EXHANDLE LeafHandleValue;
 		struct {
 			ULONG GrantedAccessBits : 25;
 			ULONG NoRightsUpgrade : 1;
 			ULONG Spare1 : 6;
 		}name1;
-		ULONG Spare2;
-	}name4;
+	}name2;
 } HANDLE_TABLE_ENTRY, *PHANDLE_TABLE_ENTRY;
 
 
