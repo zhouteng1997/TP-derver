@@ -24,6 +24,7 @@
     <ProjectGuid>{3dada74e-2615-439a-9f6f-0cacb5f94877}</ProjectGuid>
     <RootNamespace>EmProcess</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.22621.0</WindowsTargetPlatformVersion>
+    <ProjectName>0_EmProcess</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
