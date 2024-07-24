@@ -89,7 +89,6 @@ int ReadProcessMemoryForPid2(UINT32 dwPid, PVOID pBase, PVOID lpBuffer, UINT32 n
 NTSTATUS IRP_ReadProcessMemory2(PIRP pirp) {
 	KdPrint(("驱动: sys64 %s 行号 = %d\n", __FUNCDNAME__, __LINE__));
 	NTSTATUS ntStatus = STATUS_SUCCESS;  //初始化状态为成功
-	PIO_STACK_LOCATION irpStack = IoGetCurrentIrpStackLocation(pirp);  //获取当前 IRP 堆栈位置
 
 #pragma pack(push)
 #pragma pack(8)
@@ -98,23 +97,18 @@ NTSTATUS IRP_ReadProcessMemory2(PIRP pirp) {
 		UINT32 dwPid;   //目标进程 ID
 		PVOID pBase;    //目标进程地址
 		UINT32 nSize;   //要读取的数据长度
-		PVOID pbuf;     //写入数据的缓冲区地址
 	} TINPUT_BUF;
 #pragma pack(pop)
 
 	TINPUT_BUF* bufInput = (TINPUT_BUF*)(pirp->AssociatedIrp.SystemBuffer);  //获取输入缓冲区
-    ReadProcessMemoryForPid2(bufInput->dwPid, bufInput->pBase, bufInput, bufInput->nSize);  //读取进程内存
+	ReadProcessMemoryForPid2(bufInput->dwPid, bufInput->pBase, bufInput, bufInput->nSize);  //读取进程内存
 
-	if (irpStack) {
-		if (ntStatus == STATUS_SUCCESS) {  //如果操作成功
-			pirp->IoStatus.Information = irpStack->Parameters.DeviceIoControl.OutputBufferLength;  //设置返回缓冲区大小
-		}
-		else {
-			pirp->IoStatus.Information = 0;  //设置返回为 0
-		}
-		IoCompleteRequest(pirp, IO_NO_INCREMENT);  //完成请求
-	}
+	if (ntStatus == STATUS_SUCCESS)  //如果操作成功
+		pirp->IoStatus.Information = bufInput->nSize;  //设置返回缓冲区大小
+	else
+		pirp->IoStatus.Information = 0;  //设置返回为 0
 
+	IoCompleteRequest(pirp, IO_NO_INCREMENT);  //完成请求
 	pirp->IoStatus.Status = ntStatus;  //设置 IRP 状态
 	return ntStatus;  //返回状态
 }

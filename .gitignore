@@ -11,10 +11,8 @@
 
 # 忽略编译器和IDE生成的文件
 # Visual Studio
-*.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
-*.sln
 *.suo
 *.opensdf
 *.ncb

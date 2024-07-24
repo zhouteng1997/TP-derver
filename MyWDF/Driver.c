@@ -10,6 +10,17 @@
 #include "通过句柄获取对象.h"
 #include "遍历进程的句柄.h"
 
+
+//r3常用函数
+//WriteProcessMemory写内存
+//ReadProcessMemory 读内存
+//结束进程
+//TerminateProcess
+//VirtualProtectEx修改页而属性
+//VirtualAllocEx VirtualFreeEx
+//CreateRemoteThread 片cal1
+//DuplicateHandle 复制柄
+
 #define 写测试 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x803, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 #define 读测试 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x804, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 #define 读写测试 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x805, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试

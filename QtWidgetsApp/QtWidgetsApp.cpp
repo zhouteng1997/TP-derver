@@ -444,7 +444,6 @@ void QtWidgetsApp::on_addressRead_Button_clicked() {
 		UINT32 dwPid;//目标进程
 		PVOID pBase;///目标进程地址
 		UINT32 nSize;//要读取的长度
-		PVOID pbuf;//要写入数据的地址
 	}TINPUT_BUF;
 #pragma pack (pop)
 	TINPUT_BUF 传入数据;
@@ -452,14 +451,11 @@ void QtWidgetsApp::on_addressRead_Button_clicked() {
 	bool ok;
 	传入数据.pBase = (PVOID)address2.toULongLong(&ok, 16); //目标进程地址
 
-
-
 	int aaa = content2.toInt();
 	传入数据.nSize = sizeof(aaa);
-	传入数据.pbuf = (PVOID)&aaa; //要写入的数据的地址
 
 	char buffer[256];
-	sprintf_s(buffer, sizeof(buffer), "pBase = %p pbuf = %p \n", 传入数据.pBase, 传入数据.pbuf);
+	sprintf_s(buffer, sizeof(buffer), "pBase = %p  \n", 传入数据.pBase);
 	QString str1 = buffer;//将c[0]的地址赋给str
 	QMessageBox::information(NULL, "Information", str1);
 
