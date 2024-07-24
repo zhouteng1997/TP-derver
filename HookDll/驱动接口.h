@@ -1,11 +1,12 @@
-static HANDLE DeviceHandle;//存放驱动设备句柄
-static HANDLE OpenDevice();
-static struct _TROAPI {
-	BOOL WINAPI ReadProcessMemory(
-		[in]  HANDLE  hProcess,
-		[in]  LPCVOID lpBaseAddress,
-		[out] LPVOID  lpBuffer,
-		[in]  SIZE_T  nSize,
-		[out] SIZE_T* lpNumberOfBytesRead
-	);
-}TROAPI;
+
+namespace TROAPI {
+    extern HANDLE DeviceHandle; // 声明驱动设备句柄
+    HANDLE OpenDevice();
+    BOOL WINAPI ReadProcessMemory(
+        IN  HANDLE  hProcess,
+        IN  LPCVOID lpBaseAddress,
+        OUT LPVOID  lpBuffer,
+        IN  SIZE_T  nSize,
+        OUT SIZE_T* lpNumberOfBytesRead
+    );
+}

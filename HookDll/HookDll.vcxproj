@@ -25,6 +25,7 @@
     <ProjectGuid>{0d1296cd-60eb-441a-b8a6-17422709b718}</ProjectGuid>
     <RootNamespace>HookDll</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>Z_HookDll</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -141,19 +142,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="hookapi.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="驱动接口.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="hookReadProcessMemory.c" />
+    <ClCompile Include="hookapi.cpp" />
+    <ClCompile Include="hookReadProcessMemory.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="驱动接口.c" />
+    <ClCompile Include="驱动接口.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

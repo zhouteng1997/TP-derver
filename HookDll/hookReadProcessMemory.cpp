@@ -1,25 +1,26 @@
-#include"pch.h"
+#include "pch.h"
 #include "驱动接口.h"
+#include "hookapi.h"
 
 typedef BOOL(WINAPI* CALL_ReadProcessMemory)(
-	[in]  HANDLE  hProcess,
-	[in]  LPCVOID lpBaseAddress,
-	[out] LPVOID  lpBuffer,
-	[in]  SIZE_T  nSize,
-	[out] SIZE_T* lpNumberOfBytesRead
-	);
+	IN  HANDLE  hProcess,
+	IN  LPCVOID lpBaseAddress,
+	OUT LPVOID  lpBuffer,
+	IN  SIZE_T  nSize,
+	OUT SIZE_T* lpNumberOfBytesRead
+);
 
 CALL_ReadProcessMemory old_ReadProcessMemory = (CALL_ReadProcessMemory)ReadProcessMemory;
 
 BOOL WINAPI r0_ReadProcessMemory(
-	[in]  HANDLE  hProcess,
-	[in]  LPCVOID lpBaseAddress,
-	[out] LPVOID  lpBuffer,
-	[in]  SIZE_T  nSize,
-	[out] SIZE_T* lpNumberOfBytesRead
+	IN  HANDLE  hProcess,
+	IN  LPCVOID lpBaseAddress,
+	OUT LPVOID  lpBuffer,
+	IN  SIZE_T  nSize,
+	OUT SIZE_T* lpNumberOfBytesRead
 ) {
-	if (!hProcess) return FALSE;
-	if (hProcess == (HANDLE)-1) {//如果是当前进程,那么调用源函数
+	if (!hProcess || hProcess == (HANDLE)-1)
+	{
 		return old_ReadProcessMemory(hProcess, lpBaseAddress, lpBuffer, nSize, lpNumberOfBytesRead);
 	}
 	return TROAPI::ReadProcessMemory(hProcess, lpBaseAddress, lpBuffer, nSize, lpNumberOfBytesRead);

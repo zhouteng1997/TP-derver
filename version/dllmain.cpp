@@ -51,7 +51,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
     {
     case DLL_PROCESS_ATTACH:
         ::LoadLibraryA("C:\\Windows\\System32\\VERSION.dll");
-        ::MessageBoxA(NULL, "DLL加载成功!", "Success", MB_OK);
+        ::MessageBoxA(NULL, "version.dll加载成功!", "Success", MB_OK);
+        ::LoadLibraryA("HookDll.dll");
         break;
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
