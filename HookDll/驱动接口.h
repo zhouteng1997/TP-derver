@@ -2,11 +2,12 @@
 namespace TROAPI {
     extern HANDLE DeviceHandle; // 声明驱动设备句柄
     HANDLE OpenDevice();
-    BOOL WINAPI ReadProcessMemory(
-        IN  HANDLE  hProcess,
-        IN  LPCVOID lpBaseAddress,
-        OUT LPVOID  lpBuffer,
-        IN  SIZE_T  nSize,
-        OUT SIZE_T* lpNumberOfBytesRead
+    HANDLE CloseDevice();
+    BOOL WINAPI MyReadProcessMemory(
+		_In_ HANDLE hProcess,
+		_In_ LPCVOID lpBaseAddress,
+		_Out_writes_bytes_to_(nSize, *lpNumberOfBytesRead) LPVOID lpBuffer,
+		_In_ SIZE_T nSize,
+		_Out_opt_ SIZE_T* lpNumberOfBytesRead
     );
 }

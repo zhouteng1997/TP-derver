@@ -1,6 +1,7 @@
 #include "pch.h"
 #include <Windows.h>
 #include "驱动接口.h"
+#include <cstdio>
 
 #define 符号链接名 L"\\??\\MyDriver"
 
@@ -25,8 +26,8 @@
 #define IO_通过进程遍历句柄 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x821, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 
 namespace TROAPI {
-	HANDLE DeviceHandle= nullptr; // 定义驱动设备句柄;
-	HANDLE TROAPI::OpenDevice() {
+	HANDLE DeviceHandle = nullptr; // 定义驱动设备句柄;
+	HANDLE OpenDevice() {
 		DeviceHandle = CreateFileW(
 			符号链接名,
 			GENERIC_READ | GENERIC_WRITE,
@@ -35,47 +36,55 @@ namespace TROAPI {
 			FILE_ATTRIBUTE_NORMAL, NULL);
 		return DeviceHandle;
 	}
+	HANDLE CloseDevice()
+	{
+		//关闭设备
+		if (DeviceHandle != NULL)
+			CloseHandle(DeviceHandle);
+		return HANDLE();
+	}
 
-	BOOL WINAPI TROAPI::ReadProcessMemory(
-		IN  HANDLE  hProcess,
-		IN  LPCVOID lpBaseAddress,
-		OUT LPVOID  lpBuffer,
-		IN  SIZE_T  nSize,
-		OUT SIZE_T* lpNumberOfBytesRead
+	BOOL WINAPI TROAPI::MyReadProcessMemory(
+		_In_ HANDLE hProcess,
+		_In_ LPCVOID lpBaseAddress,
+		_Out_writes_bytes_to_(nSize, *lpNumberOfBytesRead) LPVOID lpBuffer,//接收从目标进程读取的数据的缓冲区
+		_In_ SIZE_T nSize,//要读取的字节数
+		_Out_opt_ SIZE_T* lpNumberOfBytesRead //实际读取的字节数
 	)
 	{
 #pragma pack (push)
 #pragma pack(8)
 		typedef struct TINPUT_BUF
 		{
-			UINT32 pid;//目标进程
+			HANDLE handle;//句柄
 			PVOID pBase;///目标进程地址
 			UINT32 nSize;//要读取的长度
 		}TINPUT_BUF;
 #pragma pack (pop)
 		TINPUT_BUF 传入数据;
-		传入数据.pid = (UINT32)hProcess; //目标进程ID
+		传入数据.handle = hProcess; //句柄
 		传入数据.pBase = (PVOID)lpBaseAddress; //目标进程地址
 		传入数据.nSize = (UINT32)nSize;
 
-
-		//写入缓冲区
-		int OutBuf[1] = { 0 };//输出缓冲区
 		DWORD dwRetSize = 0;//返回字节数
-
 		DeviceIoControl(
 			DeviceHandle,//CreateFile打开驱动设备返回的句柄
 			IO_读取受保护的进程,//控制码CTL_CODE
-
 			&传入数据,//输入缓冲区指针
-			sizeof(传入数据),//输入缓冲区大小
-
-			&OutBuf,//返回缓冲区
-			sizeof(OutBuf),//返回缓冲区大小
-
+			sizeof(TINPUT_BUF),//输入缓冲区大小
+			lpBuffer,//返回缓冲区
+			(DWORD)nSize,//返回缓冲区大小
 			&dwRetSize,//返回字节数
 			NULL);
-		//输出设备
+		if (dwRetSize) {
+			__try {
+				*(DWORD*)lpNumberOfBytesRead = dwRetSize;
+			}
+			__except (1)
+			{
+				return false;
+			}
+		}
 		return true;
 	}
 }

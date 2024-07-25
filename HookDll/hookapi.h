@@ -1,10 +1,5 @@
 #include "pch.h"
-#include <windows.h>
-#include <iostream>
+#include <Windows.h>
 
-// 临界区对象用于线程同步
-extern  CRITICAL_SECTION cs;
-
-void hookapi(PVOID* ppOriginal, PVOID pHook);
-
-void unhookapi(PVOID* ppOriginal, PVOID pHook);
+extern "C" __declspec(dllexport) void hookapi(PVOID * oldFunc, PVOID newFunc);
+extern "C" __declspec(dllexport) void unhookapi(PVOID * oldFunc, PVOID newFunc);

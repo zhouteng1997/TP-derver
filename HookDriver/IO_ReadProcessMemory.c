@@ -1,4 +1,5 @@
 #include "IO_ReadProcessMemory.h"
+#include "win10api.h"
 
 //读取进程内存的函数
 BOOLEAN KReadProcessMemory2(
@@ -42,7 +43,7 @@ BOOLEAN KReadProcessMemory2(
 		}
 	}
 	else {
-		KdPrint(("驱动: sys64: 错误行 37\n"));  //打印错误信息
+		KdPrint(("驱动: sys64: 错误行 %d\n",__LINE__));  //打印错误信息
 	}
 
 	//从目标进程分离
@@ -54,7 +55,7 @@ BOOLEAN KReadProcessMemory2(
 		KdPrint(("驱动 Mapped = %p UserBuffer = %p Length = %d\n", Mapped, UserBuffer, Length));  //打印拷贝信息
 	}
 	else {
-		KdPrint(("驱动: sys64: 错误行 37\n"));  //打印错误信息
+		KdPrint(("驱动: sys64: 错误行 %d\n", __LINE__));  //打印错误信息
 	}
 
 	if (Mapped && g_pmdl) {  //如果内存映射和 MDL 存在
@@ -68,7 +69,7 @@ BOOLEAN KReadProcessMemory2(
 }
 
 //根据进程 ID 读取进程内存
-int ReadProcessMemoryForPid2(UINT32 dwPid, PVOID pBase, PVOID lpBuffer, UINT32 nSize) {
+int ReadProcessMemoryForPid2(HANDLE dwPid, PVOID pBase, PVOID lpBuffer, UINT32 nSize) {
 	PEPROCESS Seleted_pEPROCESS = NULL;  //目标进程指针
 	DbgPrint("驱动: sys64 %s 行号 = %d\n", __FUNCDNAME__, __LINE__);
 	if (PsLookupProcessByProcessId((PVOID)(UINT_PTR)(dwPid), &Seleted_pEPROCESS) == STATUS_SUCCESS) {  //查找进程
@@ -85,29 +86,41 @@ int ReadProcessMemoryForPid2(UINT32 dwPid, PVOID pBase, PVOID lpBuffer, UINT32 n
 	return 0;  //返回失败
 }
 
+
+int ReadProcessMemoryForHandle(HANDLE handle, PVOID pBase, PVOID lpBuffer, UINT32 nSize) {
+	HANDLE pid = HandleToPid(PsGetCurrentProcessId(), handle);
+	return ReadProcessMemoryForPid2(pid, pBase, lpBuffer, nSize);
+}
+
 //处理 IRP 读取进程内存
 NTSTATUS IRP_ReadProcessMemory(PIRP pirp) {
-	KdPrint(("驱动: sys64 %s 行号 = %d\n", __FUNCDNAME__, __LINE__));
-	NTSTATUS ntStatus = STATUS_SUCCESS;  //初始化状态为成功
+	PIO_STACK_LOCATION irpStack = IoGetCurrentIrpStackLocation(pirp);//获取应用层传来的参数
+	irpStack;
+	UINT64* 缓冲区 = (UINT64*)(pirp->AssociatedIrp.SystemBuffer);
+	if (缓冲区)
+	{
 #pragma pack(push)
 #pragma pack(8)
-	//输入缓冲区结构体
-	typedef struct TINPUT_BUF {
-		UINT32 dwPid;   //目标进程 ID
-		PVOID pBase;    //目标进程地址
-		UINT32 nSize;   //要读取的数据长度
-	} TINPUT_BUF;
+		//输入缓冲区结构体
+		typedef struct TINPUT_BUF {
+			HANDLE handle;   //目标进程 ID
+			PVOID pBase;    //目标进程地址
+			UINT32 nSize;   //要读取的数据长度
+		} TINPUT_BUF;
 #pragma pack(pop)
-
-	TINPUT_BUF* bufInput = (TINPUT_BUF*)(pirp->AssociatedIrp.SystemBuffer);  //获取输入缓冲区
-	ReadProcessMemoryForPid2(bufInput->dwPid, bufInput->pBase, bufInput, bufInput->nSize);  //读取进程内存
-
-	if (ntStatus == STATUS_SUCCESS)  //如果操作成功
+		TINPUT_BUF* bufInput = (TINPUT_BUF*)缓冲区;  //获取输入缓冲区
+		UINT32 ReadSize = ReadProcessMemoryForHandle(bufInput->handle, bufInput->pBase, 缓冲区, bufInput->nSize);  //读取进程内存
+		ReadSize;
+		pirp->IoStatus.Status = STATUS_SUCCESS;
 		pirp->IoStatus.Information = bufInput->nSize;  //设置返回缓冲区大小
-	else
-		pirp->IoStatus.Information = 0;  //设置返回为 0
-
-	IoCompleteRequest(pirp, IO_NO_INCREMENT);  //完成请求
-	pirp->IoStatus.Status = ntStatus;  //设置 IRP 状态
-	return ntStatus;  //返回状态
+		IoCompleteRequest(pirp, IO_NO_INCREMENT);  //完成请求
+		if (ReadSize)
+		{
+			return STATUS_SUCCESS;
+		}
+		else {
+			return -1;
+		}
+	}
+	return -1;  //返回状态
 }

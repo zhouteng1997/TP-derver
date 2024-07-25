@@ -2,6 +2,7 @@
 #include "pch.h"
 #include "驱动接口.h"
 #include "hookapi.h"
+#include <stdio.h>
 
 BOOL HOOKReadProcessMemory(BOOL isHook);
 // DLL 主入口函数
@@ -12,9 +13,21 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH:
-		//初始化临界区
-		InitializeCriticalSection(&cs);
+
+		// 分配控制台
+		AllocConsole();
+
+		//// 获取标准输出句柄
+		//FILE* file;
+		//freopen_s(&file, "CONOUT$", "w", stdout);
+		//// 输出日志
+		//printf("DLL Loaded: Logging to console\n");
+		//// 关闭文件句柄
+		//fclose(file);
+
+
 		MessageBoxA(NULL, "HookDll加载成功", "提示", MB_OK);
+		//打开设备
 		if (TROAPI::OpenDevice() == HANDLE(-1))
 			MessageBoxA(NULL, "驱动未加载", "提示", MB_OK);
 		//hook
@@ -27,8 +40,8 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	case DLL_PROCESS_DETACH:
 		//清理hook
 		HOOKReadProcessMemory(FALSE);
-		//删除临界区
-		DeleteCriticalSection(&cs);
+		//关闭设备
+		TROAPI::CloseDevice();
 		break;
 	}
 	return TRUE;

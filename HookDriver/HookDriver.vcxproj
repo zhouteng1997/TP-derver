@@ -93,10 +93,12 @@
   <ItemGroup>
     <ClCompile Include="driver.c" />
     <ClCompile Include="IO_ReadProcessMemory.c" />
+    <ClCompile Include="win10api.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="driver.h" />
     <ClInclude Include="IO_ReadProcessMemory.h" />
+    <ClInclude Include="win10api.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

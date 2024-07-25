@@ -1,29 +1,31 @@
 #include "pch.h"
 #include "驱动接口.h"
 #include "hookapi.h"
+#include <cstdio>
 
 typedef BOOL(WINAPI* CALL_ReadProcessMemory)(
-	IN  HANDLE  hProcess,
-	IN  LPCVOID lpBaseAddress,
-	OUT LPVOID  lpBuffer,
-	IN  SIZE_T  nSize,
-	OUT SIZE_T* lpNumberOfBytesRead
-);
+	_In_ HANDLE hProcess,
+	_In_ LPCVOID lpBaseAddress,
+	_Out_writes_bytes_to_(nSize, *lpNumberOfBytesRead) LPVOID lpBuffer,
+	_In_ SIZE_T nSize,
+	_Out_opt_ SIZE_T* lpNumberOfBytesRead
+	);
 
 CALL_ReadProcessMemory old_ReadProcessMemory = (CALL_ReadProcessMemory)ReadProcessMemory;
 
 BOOL WINAPI r0_ReadProcessMemory(
-	IN  HANDLE  hProcess,
-	IN  LPCVOID lpBaseAddress,
-	OUT LPVOID  lpBuffer,
-	IN  SIZE_T  nSize,
-	OUT SIZE_T* lpNumberOfBytesRead
+	_In_ HANDLE hProcess,
+	_In_ LPCVOID lpBaseAddress,
+	_Out_writes_bytes_to_(nSize, *lpNumberOfBytesRead) LPVOID lpBuffer,
+	_In_ SIZE_T nSize,
+	_Out_opt_ SIZE_T* lpNumberOfBytesRead
 ) {
 	if (!hProcess || hProcess == (HANDLE)-1)
 	{
 		return old_ReadProcessMemory(hProcess, lpBaseAddress, lpBuffer, nSize, lpNumberOfBytesRead);
 	}
-	return TROAPI::ReadProcessMemory(hProcess, lpBaseAddress, lpBuffer, nSize, lpNumberOfBytesRead);
+	//所有有效的进程读写都走驱动
+	return TROAPI::MyReadProcessMemory(hProcess, lpBaseAddress, lpBuffer, nSize, lpNumberOfBytesRead);
 }
 
 BOOL HOOKReadProcessMemory(BOOL isHook) {
