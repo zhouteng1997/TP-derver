@@ -24,7 +24,6 @@ BOOL WINAPI r0_ReadProcessMemory(
 	{
 		return old_ReadProcessMemory(hProcess, lpBaseAddress, lpBuffer, nSize, lpNumberOfBytesRead);
 	}
-	//所有有效的进程读写都走驱动
 	return TROAPI::MyReadProcessMemory(hProcess, lpBaseAddress, lpBuffer, nSize, lpNumberOfBytesRead);
 }
 

@@ -589,7 +589,7 @@ void QtWidgetsApp::on_wladdressRead_Button_clicked() {
 	QMessageBox::information(NULL, "Information", str1);
 
 
-	//写入缓冲区
+	//输出缓冲区
 	int OutBuf[1] = { 0 };//输出缓冲区
 	DWORD dwRetSize = 0;//返回字节数
 

@@ -2,7 +2,16 @@
 #include "win10api.h"
 
 
-BOOLEAN IsOkWritePrt(UINT_PTR base) {
+UINT_PTR PR(UINT_PTR base) {
+	__try {
+		return *(UINT_PTR*)base;
+	}
+	__except (1) {
+		return 0;
+	}
+}
+
+BOOLEAN IsOkReadPtr(UINT_PTR base) {
 	__try {
 		*(UINT64*)base;
 		return TRUE;
@@ -12,85 +21,150 @@ BOOLEAN IsOkWritePrt(UINT_PTR base) {
 	}
 }
 
+size_t i64abs(INT64 value) {
+	INT64 retvalue = value;
+	if (value < 0) {
+		retvalue = ~value + 1;
+	}
+	return (size_t)retvalue;
+}
+
+size_t mymemcpy_s(char* dest, const char* src, size_t len) {
+	__try {
+		size_t num = 0;
+		if (!src || !dest) return 0;
+		size_t diff = i64abs((INT64)dest - (INT64)src);
+
+		if (diff<len && dest>src)//重叠并且目标地址大于源地址 ，需要反方向复制
+		{
+			int len08 = (int)(len / 8);
+			int len01 = len % 8;
+			{
+				UINT64* p1 = (UINT64*)dest;
+				UINT64* p2 = (UINT64*)src;
+				for (int i = len08 - 1; i >= 0; i--) {
+					p1[i] = p2[i];
+					num += 8;
+				}
+			}
+			{
+				char* p1 = (char*)dest + len08 * 8;
+				char* p2 = (char*)src + len08 * 8;
+				for (int i = len01 - 1; i > 0; i--) {
+					p1[i] = p2[i];
+					num += 1;
+				}
+			}
+		}
+		else
+		{
+			int len08 = (int)(len / 8);
+			int len01 = len % 8;
+			{
+				UINT64* p1 = (UINT64*)dest;
+				UINT64* p2 = (UINT64*)src;
+				for (int i = 0; i < len08; i++) {
+					p1[i] = p2[i];
+					num += 8;
+				}
+			}
+			{
+				char* p1 = (char*)dest + len08 * 8;
+				char* p2 = (char*)src + len08 * 8;
+				for (int i = 0; i < len01; i++) {
+					p1[i] = p2[i];
+					num += 1;
+				}
+			}
+		}
+		return num;
+	}
+	__except (1) {}
+	return 0;
+}
+
+// x HookDriver!ReadProcessMemory2
 //读取进程内存的函数
-NTSTATUS KReadProcessMemory2(
-	IN PEPROCESS Process,    //目标进程
-	IN PVOID Address,        //要读取的地址
-	IN UINT32 Length,        //要读取的数据长度
-	IN PVOID UserBuffer      //存放读取数据的缓冲区
+NTSTATUS ReadProcessMemory2(
+	IN PEPROCESS pep,    //目标进程
+	IN PVOID lpBaseAddress,        //要读取的地址
+	IN PVOID lpBuffer,      //存放读取数据的缓冲区
+	IN UINT32 nSize,        //要读取的数据长度
+	IN UINT_PTR lpNumberOfBytesRead        //读取的数据长度
 ) {
-	KAPC_STATE apc_state;              //APC 状态用于进程附加
-	PVOID tmpBuf_Kernel = NULL;
-	NTSTATUS status = STATUS_SUCCESS;
-	// 附加到目标进程的地址空间
-	KeStackAttachProcess((PVOID)Process, &apc_state);
-	// 检查地址是否有效
-	if (MmIsAddressValid(Address)) {
-		// 检查地址是否可以写入
-		if (IsOkWritePrt((UINT_PTR)Address)) {
-			__try {
-				// 分配内存并检查是否成功
-				PVOID tmpBuf_Kerne2 = ExAllocatePool(NonPagedPool, Length);
-				tmpBuf_Kernel = tmpBuf_Kerne2;
-				if (tmpBuf_Kernel == NULL) {
-					status = STATUS_INSUFFICIENT_RESOURCES;
-				}
-				else {
-					// 读取内存
-					RtlCopyMemory(tmpBuf_Kernel, Address, Length);
-				}
-			}
-			__except (EXCEPTION_EXECUTE_HANDLER) {
-				KdPrint(("驱动: sys64: 错误行 %d\n", __LINE__));
-				status = STATUS_ACCESS_VIOLATION;
-			}
-		}
-		else {
-			status = STATUS_ACCESS_DENIED;
-		}
+	pep;
+	lpBaseAddress;
+	lpBuffer;
+	nSize;
+	lpNumberOfBytesRead;
+
+	KdPrint(("驱动 ReadProcessMemory2 lpBaseAddress=%p,lpBuffer=%p,nSize=%x,lpNumberOfBytesRead=%x \n",
+		lpBaseAddress, lpBuffer, nSize, (UINT32)lpNumberOfBytesRead));  //打印错误信息
+
+	if (!IsOkReadPtr(PR((UINT_PTR)lpBuffer)))//如果这个内存不允许访问
+		return STATUS_UNSUCCESSFUL;
+
+	UINT64 num = 0;
+	NTSTATUS retStatus = STATUS_UNSUCCESSFUL;
+	KAPC_STATE apc_state;
+	RtlZeroMemory(&apc_state, sizeof(KAPC_STATE));//分配空间
+
+	PMDL mdl = IoAllocateMdl(lpBuffer, nSize, FALSE, FALSE, NULL);//映射mdl
+	if (!mdl)
+	{
+		return STATUS_UNSUCCESSFUL;
 	}
-	else {
-		KdPrint(("驱动: sys64: 错误行 %d\n", __LINE__));
-		status = STATUS_INVALID_ADDRESS;
+	MmBuildMdlForNonPagedPool(mdl);//标记未分页
+	unsigned char* lpBuffer_Mapper = (unsigned char*)MmMapLockedPages(mdl, KernelMode);//映射到内核
+
+	if (!lpBuffer_Mapper)
+	{
+		IoFreeMdl(mdl);
+		return STATUS_UNSUCCESSFUL;
 	}
-	// 从目标进程分离
-	KeUnstackDetachProcess(&apc_state);
-	if (NT_SUCCESS(status) && tmpBuf_Kernel != NULL) {
-		// 拷贝至指定用户缓冲区
+
+	KeStackAttachProcess(pep, &apc_state);//切换至目标进程
+
+
+	if (IsOkReadPtr((UINT_PTR)lpBaseAddress))
+	{
 		__try {
-			RtlCopyMemory(UserBuffer, tmpBuf_Kernel, Length);
+			num = mymemcpy_s((char*)lpBuffer_Mapper, (const char*)lpBaseAddress, (size_t)nSize);
+			retStatus = STATUS_SUCCESS;
 		}
-		__except (EXCEPTION_EXECUTE_HANDLER) {
-			KdPrint(("驱动: sys64: 错误行 %d\n", __LINE__));
-			status = STATUS_ACCESS_VIOLATION;
-		}
-		// 释放分配的内存
-		ExFreePool(tmpBuf_Kernel);
+		__except (1) {}
 	}
-	return status;  // 返回结果
-}
 
-//根据进程 ID 读取进程内存
-int ReadProcessMemoryForPid2(HANDLE dwPid, PVOID pBase, PVOID lpBuffer, UINT32 nSize) {
-	PEPROCESS Seleted_pEPROCESS = NULL;  //目标进程指针
-	DbgPrint("驱动: sys64 %s 行号 = %d\n", __FUNCDNAME__, __LINE__);
-	if (PsLookupProcessByProcessId((PVOID)(UINT_PTR)(dwPid), &Seleted_pEPROCESS) == STATUS_SUCCESS) {  //查找进程
-		NTSTATUS br = KReadProcessMemory2(Seleted_pEPROCESS, pBase, nSize, lpBuffer);  //读取进程内存
-		ObDereferenceObject(Seleted_pEPROCESS);  //取消引用进程对象
-		if (NT_SUCCESS(br)) {
-			return nSize;  //返回读取的大小
+
+	KeUnstackDetachProcess(&apc_state);//分离目标进程
+	MmUnmapLockedPages((PVOID)lpBuffer_Mapper, mdl);
+	IoFreeMdl(mdl);
+	if (num)
+	{
+		__try {
+			*(UINT32*)lpNumberOfBytesRead = (UINT32)num;
 		}
+		__except (1) {}
 	}
-	else {
-		KdPrint(("驱动 sys64 PsLookupProcessByProcessId 失败\n"));  //打印错误信息
-	}
-	return 0;  //返回失败
+	return retStatus;
 }
 
 
-int ReadProcessMemoryForHandle(HANDLE handle, PVOID pBase, PVOID lpBuffer, UINT32 nSize) {
+NTSTATUS ReadProcessMemoryForHandle(HANDLE handle, PVOID lpBaseAddress, PVOID lpBuffer, UINT32 nSize, UINT_PTR lpNumberOfBytesRead) {
 	HANDLE pid = HandleToPid(PsGetCurrentProcessId(), handle);
-	return ReadProcessMemoryForPid2(pid, pBase, lpBuffer, nSize);
+	if (pid) {
+		NTSTATUS retStatus = STATUS_UNSUCCESSFUL;
+		PEPROCESS pep = NULL;  //目标进程指针
+		if (PsLookupProcessByProcessId(pid, &pep) == STATUS_SUCCESS) {  //查找进程
+			retStatus = ReadProcessMemory2(pep, lpBaseAddress, lpBuffer, nSize, lpNumberOfBytesRead);  //读取进程内存
+			ObDereferenceObject(pep);  //取消引用进程对象
+		}
+		return retStatus;
+	}
+	else
+	{
+		return STATUS_UNSUCCESSFUL;
+	}
 }
 
 //处理 IRP 读取进程内存
@@ -100,28 +174,36 @@ NTSTATUS IRP_ReadProcessMemory(PIRP pirp) {
 	UINT64* 缓冲区 = (UINT64*)(pirp->AssociatedIrp.SystemBuffer);
 	if (缓冲区)
 	{
-#pragma pack(push)
+#pragma pack (push)
 #pragma pack(8)
-		//输入缓冲区结构体
-		typedef struct TINPUT_BUF {
-			HANDLE handle;   //目标进程 ID
-			PVOID pBase;    //目标进程地址
-			UINT32 nSize;   //要读取的数据长度
-		} TINPUT_BUF;
-#pragma pack(pop)
-		TINPUT_BUF* bufInput = (TINPUT_BUF*)缓冲区;  //获取输入缓冲区
-		UINT32 ReadSize = ReadProcessMemoryForHandle(bufInput->handle, bufInput->pBase, 缓冲区, bufInput->nSize);  //读取进程内存
-		ReadSize;
-		pirp->IoStatus.Status = STATUS_SUCCESS;
-		pirp->IoStatus.Information = bufInput->nSize;  //设置返回缓冲区大小
-		IoCompleteRequest(pirp, IO_NO_INCREMENT);  //完成请求
-		if (ReadSize)
+		typedef struct TINPUT_BUF
 		{
-			return STATUS_SUCCESS;
+			UINT64 hProcess;//句柄
+			UINT64 lpBaseAddress;///目标进程地址
+			UINT64 lpBuffer;//接收从目标进程读取的数据的缓冲区
+			UINT64 nSize;//要读取的字节数
+			UINT64 lpNumberOfBytesRead; //实际读取的字节数
+		}TINPUT_BUF;
+#pragma pack (pop)
+
+		TINPUT_BUF* input = (TINPUT_BUF*)缓冲区;  //获取输入缓冲区
+		INT64* ret = (INT64*)缓冲区;
+		NTSTATUS retStatus = ReadProcessMemoryForHandle((HANDLE)input->hProcess, (PVOID)input->lpBaseAddress,
+			(PVOID)input->lpBuffer, (UINT32)input->nSize, (UINT_PTR)input->lpNumberOfBytesRead);  //读取进程内存
+
+
+		if (NT_SUCCESS(retStatus))
+		{
+			*ret = 1;
+			pirp->IoStatus.Status = STATUS_SUCCESS;
+			pirp->IoStatus.Information = sizeof(INT64);  //设置返回缓冲区大小
 		}
 		else {
-			return -1;
+			*ret = 0;
+			pirp->IoStatus.Status = STATUS_UNSUCCESSFUL;
+			pirp->IoStatus.Information = sizeof(INT64);  //设置返回缓冲区大小
 		}
+		IoCompleteRequest(pirp, IO_NO_INCREMENT);  //完成请求
 	}
-	return -1;  //返回状态
+	return STATUS_SUCCESS;  //返回状态
 }

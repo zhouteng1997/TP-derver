@@ -1,5 +1,6 @@
 #include <ntifs.h>
 #include "IO_ReadProcessMemory.h"
+#include "IO_ZwQueryVirtualMemory.h"
 
 
 
@@ -24,8 +25,10 @@
 #define IO_通过句柄获取对象 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x820, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 #define IO_通过进程遍历句柄 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x821, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 
+#define IO_ZwQueryVirtualMemory CTL_CODE(FILE_DEVICE_UNKNOWN, 0x830, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
+
 //创建驱动设备对象
-#define 符号链接名 L"\\??\\MyDriver"
+#define 符号链接名 L"\\??\\HookDriver"
 
 //创建设备
 NTSTATUS CreateDevice(PDRIVER_OBJECT driver)
@@ -117,6 +120,8 @@ NTSTATUS IRP_CALL(PDEVICE_OBJECT DriverObject, PIRP pirp) {
 		//	return IRP_通过句柄获取对象(pirp);
 		//case IO_通过进程遍历句柄:
 		//	return IRP_通过进程遍历句柄(pirp);
+		case IO_ZwQueryVirtualMemory:
+			return IRP_ZwQueryVirtualMemory(pirp);
 		}
 	}
 	case IRP_MJ_CREATE:

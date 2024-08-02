@@ -5,6 +5,8 @@
 #include <stdio.h>
 
 BOOL HOOKReadProcessMemory(BOOL isHook);
+BOOL HOOKZwQueryVirtualMemory(BOOL isHook);
+
 // DLL 主入口函数
 BOOL APIENTRY DllMain(HMODULE hModule,
 	DWORD  ul_reason_for_call,
@@ -25,13 +27,13 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 		//// 关闭文件句柄
 		//fclose(file);
 
-
 		MessageBoxA(NULL, "HookDll加载成功", "提示", MB_OK);
 		//打开设备
 		if (TROAPI::OpenDevice() == HANDLE(-1))
 			MessageBoxA(NULL, "驱动未加载", "提示", MB_OK);
 		//hook
 		HOOKReadProcessMemory(TRUE);
+		//HOOKZwQueryVirtualMemory(TRUE);
 		break;
 	case DLL_THREAD_ATTACH:
 		break;
@@ -40,6 +42,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	case DLL_PROCESS_DETACH:
 		//清理hook
 		HOOKReadProcessMemory(FALSE);
+		//HOOKZwQueryVirtualMemory(FALSE);
 		//关闭设备
 		TROAPI::CloseDevice();
 		break;

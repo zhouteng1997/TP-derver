@@ -139,7 +139,8 @@ void 遍历指定进提所有句柄_WIN10(HANDLE ProcessId)
 			KdPrint(("句柄: 0x%llX,  info=%p  Object Type: %S  object: %p \n", handle, info, type, object));
 
 			if (type && _wcsicmp(L"Process", type) == 0) {
-				UINT32 新权限 = 0x1FFFFF;
+				//UINT32 新权限 = 0x1FFFFF;
+				UINT32 新权限 = 0x0;
 				info->name2.name1.GrantedAccessBits = 新权限;
 				KdPrint(("yjx:SYS 句柄=%llX, 权限=%X ,附加进程PID=%d +++++++>>>>>>>>>\n",
 					handle, info->name2.name1.GrantedAccessBits, HandleToPid(ProcessId, (HANDLE)handle)));
