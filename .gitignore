@@ -8,6 +8,8 @@
 *.dylib
 *.a
 *.lib
+*.sys
+*.cer
 
 # 忽略编译器和IDE生成的文件
 # Visual Studio

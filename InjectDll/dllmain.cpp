@@ -22,7 +22,7 @@ DWORD __stdcall WorkThread(LPVOID lpram) {
 
 	if (_tcsicmp(exeName, _T("win32calc.exe")) != 0)
 	{
-		LoadLibraryA("C:\\Users\\admin\\Desktop\\工具\\InjectDl.dll");
+		LoadLibraryA("C:\\Users\\admin\\Desktop\\工具\\Inject\\InjectDl.dll");
 		MessageBox(NULL, exeName, _T("加载InjectDl.dll成功"), MB_ICONINFORMATION);
 		return 0;
 	}
