@@ -221,44 +221,6 @@ void DeleteDriver(PDRIVER_OBJECT pDriver)
 }
 
 
-VOID DriverUnload(PDRIVER_OBJECT DriverObject) {
-
-	UNREFERENCED_PARAMETER(DriverObject);
-	//PsSetCreateProcessNotifyRoutine(CreateProcessNotify, TRUE);
-	//PsRemoveLoadImageNotifyRoutine(LoadImageNotify);
-
-	if (g_injectDll.x64dll != NULL)
-	{
-		ExFreePoolWithTag(g_injectDll.x64dll, 'd64x');
-	}
-	if (g_injectDll.x86dll != NULL)
-	{
-		ExFreePoolWithTag(g_injectDll.x86dll, 'd68x');
-	}
-
-	while (!IsListEmpty(&g_injectList.link))
-	{
-		PINJECT_PROCESSID_LIST next = (PINJECT_PROCESSID_LIST)g_injectList.link.Blink;
-		RemoveEntryList(&next->link);
-		ExFreeToNPagedLookasideList(&g_injectListLookaside, &next->link);
-	}
-
-	if (&g_ResourceMutex != NULL)
-		ExDeleteResourceLite(&g_ResourceMutex);
-	if (&g_injectListLookaside != NULL)
-		ExDeleteNPagedLookasideList(&g_injectListLookaside);
-	if (&g_injectDataLookaside != NULL)
-		ExDeleteNPagedLookasideList(&g_injectDataLookaside);
-
-	NTDLL::Deinitialize();
-
-	//删除驱动对象
-	DeleteDriver(DriverObject);
-	KdPrint(("驱动卸载\n"));
-
-	
-}
-
 NTSTATUS DriverDefaultHandler(
 	IN PDEVICE_OBJECT DeviceObject,
 	IN PIRP Irp)
@@ -1255,10 +1217,48 @@ VOID CreateProcessNotify(
 
 }
 
+VOID LoadDriverUnload(PDRIVER_OBJECT DriverObject) {
+	UNREFERENCED_PARAMETER(DriverObject);
+
+
+	if (g_injectDll.x64dll != NULL)
+	{
+		ExFreePoolWithTag(g_injectDll.x64dll, 'd64x');
+	}
+	if (g_injectDll.x86dll != NULL)
+	{
+		ExFreePoolWithTag(g_injectDll.x86dll, 'd68x');
+	}
+
+	while (!IsListEmpty(&g_injectList.link))
+	{
+		PINJECT_PROCESSID_LIST next = (PINJECT_PROCESSID_LIST)g_injectList.link.Blink;
+		RemoveEntryList(&next->link);
+		ExFreeToNPagedLookasideList(&g_injectListLookaside, &next->link);
+	}
+
+	if (&g_ResourceMutex != NULL)
+		ExDeleteResourceLite(&g_ResourceMutex);
+	if (&g_injectListLookaside != NULL)
+		ExDeleteNPagedLookasideList(&g_injectListLookaside);
+	if (&g_injectDataLookaside != NULL)
+		ExDeleteNPagedLookasideList(&g_injectDataLookaside);
+
+	//删除驱动对象
+	DeleteDriver(DriverObject);
+	KdPrint(("驱动卸载\n"));
+
+	NTDLL::Deinitialize();
+}
+
+VOID DriverUnload(PDRIVER_OBJECT DriverObject) {
+	PsSetCreateProcessNotifyRoutine(CreateProcessNotify, TRUE);
+	PsRemoveLoadImageNotifyRoutine(LoadImageNotify);
+	LoadDriverUnload(DriverObject);
+}
+
 extern "C"
 NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath) {
-	__debugbreak();
-
 	UNREFERENCED_PARAMETER(RegistryPath);
 	KdPrint(("驱动安装\n"));
 	//设置卸载例程
@@ -1307,17 +1307,15 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath) 
 		pfn_NtWriteVirtualMemory == NULL ||
 		pfn_NtProtectVirtualMemory == NULL)
 	{
-		NTDLL::Deinitialize();
-		//IoDeleteSymbolicLink(&Win32Device);
-		//IoDeleteDevice(DriverObject->DeviceObject);
-		//return STATUS_UNSUCCESSFUL;
+		LoadDriverUnload(DriverObject);
+		return STATUS_UNSUCCESSFUL;
 	}
 
 	NTSTATUS status;
 	status = PsSetLoadImageNotifyRoutine(LoadImageNotify);
 	if (!NT_SUCCESS(status))
 	{
-		DriverUnload(DriverObject);
+		LoadDriverUnload(DriverObject);
 		return status;
 	}
 
@@ -1325,7 +1323,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath) 
 	if (!NT_SUCCESS(status))
 	{
 		PsRemoveLoadImageNotifyRoutine(LoadImageNotify);
-		DriverUnload(DriverObject);
+		LoadDriverUnload(DriverObject);
 		return status;
 	}
 
