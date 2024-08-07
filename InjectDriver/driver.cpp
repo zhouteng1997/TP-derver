@@ -1,28 +1,40 @@
-#include "driver.h"
-//#include "Inject\undocumented.h"
-//#include "Inject\ssdt.h"
-//#include "Inject\ntdll.h"
+#include <ntifs.h>
+#include "inject\ssdt.h"
+#include "inject\undocumented.h"
+#include "inject\ntdll.h"
 #include "Inject\MemLoadDll.h"
 
+//特别提醒
+//ExAllocatePoolZero
+//这个函数只能在windows低版本使用，最新的请用ExAllocatePool2
 
-#pragma warning(disable: 28252)
+//ExFreeToNPagedLookasideList  
+//从Windows11 版本 22H2 开始，此函数从内联更改为导出。 因此，如果生成面向最新版本的 Windows 的驱动程序，将无法在较旧的 OS 版本中加载该驱动程序。 若要在 Visual Studio 中更改目标 OS 版本，请选择“配置属性”->“驱动程序设置”->“常规”。
+//我虚拟机版本为Windows 10 Kernel Version 17763 MP (1 procs) Free x64 ，所以选择了Windows 10.0.17763
 
-#if 0
-#include <ntstatus.h>
-#endif
-//#include <ntimage.h>
 
-static UNICODE_STRING DeviceName;
-static UNICODE_STRING Win32Device;
+#define 写测试 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x803, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
+#define 读测试 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x804, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
+#define 读写测试 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x805, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 
-#define TAG_INJECTLIST	'ljni'
-#define TAG_INJECTDATA	'djni'
+#define IO_添加受保护的PID CTL_CODE(FILE_DEVICE_UNKNOWN, 0x806, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
+#define IO_删除受保护的PID CTL_CODE(FILE_DEVICE_UNKNOWN, 0x807, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
+#define IO_清空受保护的PID CTL_CODE(FILE_DEVICE_UNKNOWN, 0x808, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 
-#ifdef DBG
-#define DPRINT(...) DbgPrint(__VA_ARGS__)
-#else
-#define DPRINT(...)
-#endif
+#define IO_写入受保护的进程 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x80a, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
+#define IO_读取受保护的进程 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x80b, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
+
+#define CTL_IO_物理内存写入 CTL_CODE(FILE_DEVICE_UNKNOWN,0x80c,METHOD_BUFFERED,FILE_ANY_ACCESS) //读写测试
+#define CTL_IO_物理内存读取 CTL_CODE(FILE_DEVICE_UNKNOWN,0x80d,METHOD_BUFFERED,FILE_ANY_ACCESS) //读写测试
+
+#define IO_添加需提权的PID CTL_CODE(FILE_DEVICE_UNKNOWN, 0x811, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
+#define IO_删除需提权的PID CTL_CODE(FILE_DEVICE_UNKNOWN, 0x812, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
+#define IO_清空需提权的PID CTL_CODE(FILE_DEVICE_UNKNOWN, 0x813, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
+
+#define IO_通过句柄获取对象 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x820, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
+#define IO_通过进程遍历句柄 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x821, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
+
+#define IO_ZwQueryVirtualMemory CTL_CODE(FILE_DEVICE_UNKNOWN, 0x830, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 
 #define IOCTL_SET_INJECT_X86DLL \
     CTL_CODE(FILE_DEVICE_UNKNOWN, 0x900, METHOD_IN_DIRECT, FILE_ANY_ACCESS)
@@ -30,10 +42,12 @@ static UNICODE_STRING Win32Device;
 #define IOCTL_SET_INJECT_X64DLL \
     CTL_CODE(FILE_DEVICE_UNKNOWN, 0x901, METHOD_IN_DIRECT, FILE_ANY_ACCESS)
 
+#define TAG_INJECTLIST	'ljni'
+#define TAG_INJECTDATA	'djni'
+
 extern "C"
 NTKERNELAPI
 PVOID NTAPI PsGetProcessWow64Process(PEPROCESS process);
-
 
 extern "C"
 NTKERNELAPI
@@ -151,6 +165,203 @@ fn_NtReadVirtualMemory		pfn_NtReadVirtualMemory;
 fn_NtWriteVirtualMemory		pfn_NtWriteVirtualMemory;
 fn_NtProtectVirtualMemory	pfn_NtProtectVirtualMemory;
 
+//创建驱动设备符号
+#define 符号链接名 L"\\??\\HookDriver"
+//创建驱动设备对象
+#define 设备链接名 L"\\DEVICE\\HookDriver"
+
+//创建设备
+NTSTATUS CreateDevice(PDRIVER_OBJECT driver, UNICODE_STRING MyDriver, UNICODE_STRING uzSymbolName)
+{
+	NTSTATUS status;
+	PDEVICE_OBJECT device;//用于存放设备对象
+	status = IoCreateDevice(driver,
+		sizeof(driver->DriverExtension),
+		&MyDriver,
+		FILE_DEVICE_UNKNOWN, FILE_DEVICE_SECURE_OPEN, FALSE, &device);
+
+	if (status == STATUS_SUCCESS)//STATUS_SUCCESS)
+	{
+		KdPrint(("驱动设备对象创建成功,OK \n"));//创建符号链接
+		status = IoCreateSymbolicLink(&uzSymbolName, &MyDriver);
+		if (status == STATUS_SUCCESS)
+		{
+			KdPrint(("驱动创建符号链接 %wZ 成功", &uzSymbolName));
+		}
+		else {
+			KdPrint(("驱动创建符号链接 %wZ 失败 status=%X", &uzSymbolName, status));
+		}
+	}
+	else {
+		KdPrint(("驱动设备对象创建失败，删除设备"));
+		if (device == NULL)	//无该条件判断将会出现警告Warning C6387
+			return status;	//如果if条件成立，则return 语句生效，把0返回给主函数，即提前结束了程序
+		IoDeleteDevice(device);
+	}
+	return status;
+}
+
+//删除设备
+void DeleteDriver(PDRIVER_OBJECT pDriver)
+{
+	KdPrint(("驱动进入了卸载例程"));
+	if (pDriver->DeviceObject)
+	{
+
+		//删除符号链接
+		UNICODE_STRING uzSymbolName;//符号链接名字
+		RtlInitUnicodeString(&uzSymbolName, 符号链接名); //CreateFile
+		KdPrint(("驱动删除符号链接=%wZ", &uzSymbolName));
+		IoDeleteSymbolicLink(&uzSymbolName);
+		//
+		KdPrint(("驱动删除驱动设备"));
+		IoDeleteDevice(pDriver->DeviceObject);//删除设备对象
+	}
+	KdPrint(("驱动退出卸载例程"));
+}
+
+
+VOID DriverUnload(PDRIVER_OBJECT DriverObject) {
+
+	UNREFERENCED_PARAMETER(DriverObject);
+	//PsSetCreateProcessNotifyRoutine(CreateProcessNotify, TRUE);
+	//PsRemoveLoadImageNotifyRoutine(LoadImageNotify);
+
+	if (g_injectDll.x64dll != NULL)
+	{
+		ExFreePoolWithTag(g_injectDll.x64dll, 'd64x');
+	}
+	if (g_injectDll.x86dll != NULL)
+	{
+		ExFreePoolWithTag(g_injectDll.x86dll, 'd68x');
+	}
+
+	while (!IsListEmpty(&g_injectList.link))
+	{
+		PINJECT_PROCESSID_LIST next = (PINJECT_PROCESSID_LIST)g_injectList.link.Blink;
+		RemoveEntryList(&next->link);
+		ExFreeToNPagedLookasideList(&g_injectListLookaside, &next->link);
+	}
+
+	if (&g_ResourceMutex != NULL)
+		ExDeleteResourceLite(&g_ResourceMutex);
+	if (&g_injectListLookaside != NULL)
+		ExDeleteNPagedLookasideList(&g_injectListLookaside);
+	if (&g_injectDataLookaside != NULL)
+		ExDeleteNPagedLookasideList(&g_injectDataLookaside);
+
+	NTDLL::Deinitialize();
+
+	//删除驱动对象
+	DeleteDriver(DriverObject);
+	KdPrint(("驱动卸载\n"));
+
+	
+}
+
+NTSTATUS DriverDefaultHandler(
+	IN PDEVICE_OBJECT DeviceObject,
+	IN PIRP Irp)
+{
+	UNREFERENCED_PARAMETER(DeviceObject);
+	Irp->IoStatus.Status = STATUS_SUCCESS;
+	Irp->IoStatus.Information = 0;
+	IoCompleteRequest(Irp, IO_NO_INCREMENT);
+	return Irp->IoStatus.Status;
+}
+
+NTSTATUS DriverControlHandler(
+	IN PDEVICE_OBJECT DeviceObject,
+	IN PIRP Irp)
+
+{
+	PIO_STACK_LOCATION  irpSp;// Pointer to current stack location
+	NTSTATUS            ntStatus = STATUS_UNSUCCESSFUL;// Assume success
+	ULONG               inBufLength; // Input buffer length
+	ULONG               outBufLength; // Output buffer length
+	PUCHAR				inBuf, outBuf;
+	UNREFERENCED_PARAMETER(DeviceObject);
+
+	PAGED_CODE();
+
+	irpSp = IoGetCurrentIrpStackLocation(Irp);
+
+	inBufLength = irpSp->Parameters.DeviceIoControl.InputBufferLength;
+	outBufLength = irpSp->Parameters.DeviceIoControl.OutputBufferLength;
+
+	inBuf = (PUCHAR)Irp->AssociatedIrp.SystemBuffer;
+	outBuf = (PUCHAR)Irp->AssociatedIrp.SystemBuffer;
+
+	if (!inBufLength || !outBufLength)
+	{
+		ntStatus = STATUS_INVALID_PARAMETER;
+		goto End;
+	}
+
+	switch (irpSp->Parameters.DeviceIoControl.IoControlCode)
+	{
+
+	case IOCTL_SET_INJECT_X86DLL:
+	{
+		if (g_injectDll.x86dll == NULL && g_injectDll.x86dllsize == 0)
+		{
+			////周腾修改
+			PIMAGE_DOS_HEADER dosHeadPtr = (PIMAGE_DOS_HEADER)inBuf;
+			if (dosHeadPtr->e_magic != IMAGE_DOS_SIGNATURE)
+			{
+				break;
+			}
+
+			g_injectDll.x86dll = ExAllocatePoolZero(NonPagedPool, inBufLength, 'd68x');
+			if (g_injectDll.x86dll != NULL)
+			{
+				g_injectDll.x86dllsize = inBufLength;
+				memcpy(g_injectDll.x86dll, inBuf, inBufLength);
+				ntStatus = STATUS_SUCCESS;
+			}
+		}
+		break;
+	}
+	case IOCTL_SET_INJECT_X64DLL:
+	{
+		if (g_injectDll.x64dll == NULL && g_injectDll.x64dllsize == 0)
+		{
+			////周腾修改
+			PIMAGE_DOS_HEADER dosHeadPtr = (PIMAGE_DOS_HEADER)inBuf;
+			if (dosHeadPtr->e_magic != IMAGE_DOS_SIGNATURE)
+			{
+				break;
+			}
+
+			g_injectDll.x64dll = ExAllocatePoolZero(NonPagedPool, inBufLength, 'd64x');
+			if (g_injectDll.x64dll != NULL)
+			{
+				g_injectDll.x64dllsize = inBufLength;
+				memcpy(g_injectDll.x64dll, inBuf, inBufLength);
+				ntStatus = STATUS_SUCCESS;
+			}
+		}
+		break;
+	}
+
+	default:
+		break;
+	}
+
+End:
+	//
+	// Finish the I/O operation by simply completing the packet and returning
+	// the same status as in the packet itself.
+	//
+
+	Irp->IoStatus.Status = ntStatus;
+	Irp->IoStatus.Information = 0;
+
+	IoCompleteRequest(Irp, IO_NO_INCREMENT);
+
+	return ntStatus;
+}
+
 //
 //通过pid查询进程是否已经注入
 //
@@ -187,87 +398,34 @@ BOOLEAN QueryInjectListStatus(HANDLE	processid)
 }
 
 //
-//设置pid 注入状态为已注入
+// 搜索字符串,来自blackbone
 //
-VOID SetInjectListStatus(HANDLE	processid)
+LONG SafeSearchString(IN PUNICODE_STRING source, IN PUNICODE_STRING target, IN BOOLEAN CaseInSensitive)
 {
-	KeEnterCriticalRegion();
-	ExAcquireResourceExclusiveLite(&g_ResourceMutex, TRUE);
+	ASSERT(source != NULL && target != NULL);
+	if (source == NULL || target == NULL || source->Buffer == NULL || target->Buffer == NULL)
+		return 0xC000000DL;
 
-	PLIST_ENTRY	head = &g_injectList.link;
-	PINJECT_PROCESSID_LIST next = (PINJECT_PROCESSID_LIST)g_injectList.link.Blink;
+	// Size mismatch
+	if (source->Length < target->Length)
+		return -1;
 
-	while (head != (PLIST_ENTRY)next)
+	USHORT diff = source->Length - target->Length;
+	for (USHORT i = 0; i <= (diff / sizeof(WCHAR)); i++)
 	{
-		if (next->pid == processid)
+		if (RtlCompareUnicodeStrings(
+			source->Buffer + i,
+			target->Length / sizeof(WCHAR),
+			target->Buffer,
+			target->Length / sizeof(WCHAR),
+			CaseInSensitive
+		) == 0)
 		{
-			next->inject = TRUE;
-			break;
+			return i;
 		}
-
-		next = (PINJECT_PROCESSID_LIST)(next->link.Blink);
 	}
 
-
-	ExReleaseResourceLite(&g_ResourceMutex);
-	KeLeaveCriticalRegion();
-
-}
-
-//
-//添加pid 到注入列表
-//
-VOID AddInjectList(HANDLE processid)
-{
-	//DPRINT("%s %d\n", __FUNCTION__, processid);
-
-	KeEnterCriticalRegion();
-	ExAcquireResourceExclusiveLite(&g_ResourceMutex, TRUE);
-
-	PINJECT_PROCESSID_LIST newLink = (PINJECT_PROCESSID_LIST)\
-		ExAllocateFromNPagedLookasideList(&g_injectListLookaside);
-
-	if (newLink == NULL)
-	{
-		ASSERT(FALSE);
-	}
-	newLink->pid = processid;
-	newLink->inject = FALSE;
-
-	InsertTailList(&g_injectList.link, (PLIST_ENTRY)newLink);
-
-	ExReleaseResourceLite(&g_ResourceMutex);
-	KeLeaveCriticalRegion();
-}
-
-//
-//进程退出 释放pid链表
-//
-VOID DeleteInjectList(HANDLE processid)
-{
-	//DPRINT("%s %d\n", __FUNCTION__, processid);
-
-	KeEnterCriticalRegion();
-	ExAcquireResourceExclusiveLite(&g_ResourceMutex, TRUE);
-
-	PLIST_ENTRY	head = &g_injectList.link;
-	PINJECT_PROCESSID_LIST next = (PINJECT_PROCESSID_LIST)g_injectList.link.Blink;
-
-	while (head != (PLIST_ENTRY)next)
-	{
-		if (next->pid == processid)
-		{
-			RemoveEntryList(&next->link);
-			ExFreeToNPagedLookasideList(&g_injectListLookaside, &next->link);
-			break;
-		}
-
-		next = (PINJECT_PROCESSID_LIST)(next->link.Blink);
-	}
-
-
-	ExReleaseResourceLite(&g_ResourceMutex);
-	KeLeaveCriticalRegion();
+	return -1;
 }
 
 //
@@ -375,37 +533,6 @@ ULONG_PTR GetProcAddressR(ULONG_PTR hModule, const char* lpProcName, BOOLEAN x64
 	//}
 
 	return fpResult;
-}
-
-//
-// 搜索字符串,来自blackbone
-//
-LONG SafeSearchString(IN PUNICODE_STRING source, IN PUNICODE_STRING target, IN BOOLEAN CaseInSensitive)
-{
-	ASSERT(source != NULL && target != NULL);
-	if (source == NULL || target == NULL || source->Buffer == NULL || target->Buffer == NULL)
-		return 0xC000000DL;
-
-	// Size mismatch
-	if (source->Length < target->Length)
-		return -1;
-
-	USHORT diff = source->Length - target->Length;
-	for (USHORT i = 0; i <= (diff / sizeof(WCHAR)); i++)
-	{
-		if (RtlCompareUnicodeStrings(
-			source->Buffer + i,
-			target->Length / sizeof(WCHAR),
-			target->Buffer,
-			target->Length / sizeof(WCHAR),
-			CaseInSensitive
-		) == 0)
-		{
-			return i;
-		}
-	}
-
-	return -1;
 }
 
 //
@@ -673,6 +800,9 @@ VOID INJECT_ROUTINE_X64(
 	ULONG	dwTmpBuf2;
 	SIZE_T	returnLen;
 
+	UCHAR saveReg[] = "\x50\x51\x52\x53\x6A\xFF\x55\x56\x57\x41\x50\x41\x51\x6A\x10\x41\x53\x41\x54\x41\x55\x41\x56\x41\x57";
+	UCHAR restoneReg[] = "\x41\x5F\x41\x5E\x41\x5D\x41\x5C\x41\x5B\x41\x5A\x41\x59\x41\x58\x5F\x5E\x5D\x48\x83\xC4\x08\x5B\x5A\x59\x58";
+
 	//KdBreakPoint();
 
 	//
@@ -714,9 +844,6 @@ VOID INJECT_ROUTINE_X64(
 	//3.计算shellcode 大小
 	//
 	alloc_size = sizeof(INJECT_PROCESSID_PAYLOAD_X64) + sizeof(MemLoadShellcode_x64) + g_injectDll.x64dllsize;
-
-	UCHAR saveReg[] = "\x50\x51\x52\x53\x6A\xFF\x55\x56\x57\x41\x50\x41\x51\x6A\x10\x41\x53\x41\x54\x41\x55\x41\x56\x41\x57";
-	UCHAR restoneReg[] = "\x41\x5F\x41\x5E\x41\x5D\x41\x5C\x41\x5B\x41\x5A\x41\x59\x41\x58\x5F\x5E\x5D\x48\x83\xC4\x08\x5B\x5A\x59\x58";
 
 	memcpy(payload.saveReg, saveReg, sizeof(saveReg));
 	memcpy(payload.restoneReg, restoneReg, sizeof(restoneReg));
@@ -874,6 +1001,34 @@ __exit:
 
 }
 
+//
+//设置pid 注入状态为已注入
+//
+VOID SetInjectListStatus(HANDLE	processid)
+{
+	KeEnterCriticalRegion();
+	ExAcquireResourceExclusiveLite(&g_ResourceMutex, TRUE);
+
+	PLIST_ENTRY	head = &g_injectList.link;
+	PINJECT_PROCESSID_LIST next = (PINJECT_PROCESSID_LIST)g_injectList.link.Blink;
+
+	while (head != (PLIST_ENTRY)next)
+	{
+		if (next->pid == processid)
+		{
+			next->inject = TRUE;
+			break;
+		}
+
+		next = (PINJECT_PROCESSID_LIST)(next->link.Blink);
+	}
+
+
+	ExReleaseResourceLite(&g_ResourceMutex);
+	KeLeaveCriticalRegion();
+
+}
+
 VOID LoadImageNotify(
 	_In_ PUNICODE_STRING FullImageName,
 	_In_ HANDLE ProcessId,
@@ -1009,6 +1164,62 @@ VOID LoadImageNotify(
 
 }
 
+//
+//添加pid 到注入列表
+//
+VOID AddInjectList(HANDLE processid)
+{
+	//DPRINT("%s %d\n", __FUNCTION__, processid);
+
+	KeEnterCriticalRegion();
+	ExAcquireResourceExclusiveLite(&g_ResourceMutex, TRUE);
+
+	PINJECT_PROCESSID_LIST newLink = (PINJECT_PROCESSID_LIST)\
+		ExAllocateFromNPagedLookasideList(&g_injectListLookaside);
+
+	if (newLink == NULL)
+	{
+		ASSERT(FALSE);
+	}
+	newLink->pid = processid;
+	newLink->inject = FALSE;
+
+	InsertTailList(&g_injectList.link, (PLIST_ENTRY)newLink);
+
+	ExReleaseResourceLite(&g_ResourceMutex);
+	KeLeaveCriticalRegion();
+}
+
+//
+//进程退出 释放pid链表
+//
+VOID DeleteInjectList(HANDLE processid)
+{
+	//DPRINT("%s %d\n", __FUNCTION__, processid);
+
+	KeEnterCriticalRegion();
+	ExAcquireResourceExclusiveLite(&g_ResourceMutex, TRUE);
+
+	PLIST_ENTRY	head = &g_injectList.link;
+	PINJECT_PROCESSID_LIST next = (PINJECT_PROCESSID_LIST)g_injectList.link.Blink;
+
+	while (head != (PLIST_ENTRY)next)
+	{
+		if (next->pid == processid)
+		{
+			RemoveEntryList(&next->link);
+			ExFreeToNPagedLookasideList(&g_injectListLookaside, &next->link);
+			break;
+		}
+
+		next = (PINJECT_PROCESSID_LIST)(next->link.Blink);
+	}
+
+
+	ExReleaseResourceLite(&g_ResourceMutex);
+	KeLeaveCriticalRegion();
+}
+
 VOID CreateProcessNotify(
 	_In_ HANDLE ParentId,
 	_In_ HANDLE ProcessId,
@@ -1044,251 +1255,69 @@ VOID CreateProcessNotify(
 
 }
 
-
-VOID DriverUnload(
-	IN PDRIVER_OBJECT DriverObject)
-{
-
-	PsSetCreateProcessNotifyRoutine(CreateProcessNotify, TRUE);
-	PsRemoveLoadImageNotifyRoutine(LoadImageNotify);
-
-	//NTDLL::Deinitialize();  //周腾修改
-
-	IoDeleteSymbolicLink(&Win32Device);
-	IoDeleteDevice(DriverObject->DeviceObject);
-
-	if (g_injectDll.x64dll != NULL)
-	{
-		ExFreePoolWithTag(g_injectDll.x64dll, 'd64x');
-	}
-	if (g_injectDll.x86dll != NULL)
-	{
-		ExFreePoolWithTag(g_injectDll.x86dll, 'd68x');
-	}
-
-	while (!IsListEmpty(&g_injectList.link))
-	{
-		PINJECT_PROCESSID_LIST next = (PINJECT_PROCESSID_LIST)g_injectList.link.Blink;
-		RemoveEntryList(&next->link);
-		ExFreeToNPagedLookasideList(&g_injectListLookaside, &next->link);
-	}
-
-	ExDeleteResourceLite(&g_ResourceMutex);
-	ExDeleteNPagedLookasideList(&g_injectListLookaside);
-	ExDeleteNPagedLookasideList(&g_injectDataLookaside);
-
-}
-
-NTSTATUS DriverDefaultHandler(
-	IN PDEVICE_OBJECT DeviceObject,
-	IN PIRP Irp)
-{
-	UNREFERENCED_PARAMETER(DeviceObject);
-	Irp->IoStatus.Status = STATUS_SUCCESS;
-	Irp->IoStatus.Information = 0;
-	IoCompleteRequest(Irp, IO_NO_INCREMENT);
-	return Irp->IoStatus.Status;
-}
-
-NTSTATUS DriverControlHandler(
-	IN PDEVICE_OBJECT DeviceObject,
-	IN PIRP Irp)
-
-{
-	PIO_STACK_LOCATION  irpSp;// Pointer to current stack location
-	NTSTATUS            ntStatus = STATUS_UNSUCCESSFUL;// Assume success
-	ULONG               inBufLength; // Input buffer length
-	ULONG               outBufLength; // Output buffer length
-	PUCHAR				inBuf, outBuf;
-	UNREFERENCED_PARAMETER(DeviceObject);
-
-	PAGED_CODE();
-
-	irpSp = IoGetCurrentIrpStackLocation(Irp);
-
-	inBufLength = irpSp->Parameters.DeviceIoControl.InputBufferLength;
-	outBufLength = irpSp->Parameters.DeviceIoControl.OutputBufferLength;
-
-	inBuf = (PUCHAR)Irp->AssociatedIrp.SystemBuffer;
-	outBuf = (PUCHAR)Irp->AssociatedIrp.SystemBuffer;
-
-	if (!inBufLength || !outBufLength)
-	{
-		ntStatus = STATUS_INVALID_PARAMETER;
-		goto End;
-	}
-
-	switch (irpSp->Parameters.DeviceIoControl.IoControlCode)
-	{
-		
-	case IOCTL_SET_INJECT_X86DLL:
-	{
-		if (g_injectDll.x86dll == NULL && g_injectDll.x86dllsize == 0)
-		{
-			//周腾修改
-			/*PIMAGE_DOS_HEADER dosHeadPtr = (PIMAGE_DOS_HEADER)inBuf;
-			if (dosHeadPtr->e_magic != IMAGE_DOS_SIGNATURE)
-			{
-				break;
-			}
-
-			g_injectDll.x86dll = ExAllocatePool2(NonPagedPool, inBufLength, 'd68x');
-			if (g_injectDll.x86dll != NULL)
-			{
-				g_injectDll.x86dllsize = inBufLength;
-				memcpy(g_injectDll.x86dll, inBuf, inBufLength);
-				ntStatus = STATUS_SUCCESS;
-			}*/
-		}
-		break;
-	}
-	case IOCTL_SET_INJECT_X64DLL:
-	{
-		if (g_injectDll.x64dll == NULL && g_injectDll.x64dllsize == 0)
-		{
-			//周腾修改
-			/*PIMAGE_DOS_HEADER dosHeadPtr = (PIMAGE_DOS_HEADER)inBuf;
-			if (dosHeadPtr->e_magic != IMAGE_DOS_SIGNATURE)
-			{
-				break;
-			}
-
-			g_injectDll.x64dll = ExAllocatePool2(NonPagedPool, inBufLength, 'd64x');
-			if (g_injectDll.x64dll != NULL)
-			{
-				g_injectDll.x64dllsize = inBufLength;
-				memcpy(g_injectDll.x64dll, inBuf, inBufLength);
-				ntStatus = STATUS_SUCCESS;
-			}*/
-		}
-		break;
-	}
-
-	default:
-		break;
-	}
-
-End:
-	//
-	// Finish the I/O operation by simply completing the packet and returning
-	// the same status as in the packet itself.
-	//
-
-	Irp->IoStatus.Status = ntStatus;
-	Irp->IoStatus.Information = 0;
-
-	IoCompleteRequest(Irp, IO_NO_INCREMENT);
-
-	return ntStatus;
-}
-
 extern "C"
-NTSTATUS DriverEntry(
-	IN PDRIVER_OBJECT DriverObject,
-	IN PUNICODE_STRING  RegistryPath)
-{
+NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath) {
 	__debugbreak();
-	UNREFERENCED_PARAMETER(RegistryPath);
-	PDEVICE_OBJECT DeviceObject = NULL;
-	NTSTATUS status;
 
-	//set callback functions
+	UNREFERENCED_PARAMETER(RegistryPath);
+	KdPrint(("驱动安装\n"));
+	//设置卸载例程
 	DriverObject->DriverUnload = DriverUnload;
+	//设置派遣函数
 	for (unsigned int i = 0; i <= IRP_MJ_MAXIMUM_FUNCTION; i++)
 		DriverObject->MajorFunction[i] = DriverDefaultHandler;
 
 	DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = DriverControlHandler;
 
-
-	//周腾修改
-	////read ntdll.dll from disk so we can use it for exports
-	//if (!NT_SUCCESS(NTDLL::Initialize()))
-	//{
-	//	DPRINT("[DeugMessage] Ntdll::Initialize() failed...\r\n");
-	//	return STATUS_UNSUCCESSFUL;
-	//}
-
-	////initialize undocumented APIs
-	//if (!Undocumented::UndocumentedInit())
-	//{
-	//	DPRINT("[DeugMessage] UndocumentedInit() failed...\r\n");
-	//	return STATUS_UNSUCCESSFUL;
-	//}
-
-	DPRINT("[DeugMessage] UndocumentedInit() was successful!\r\n");
-
-	//create io device ,use fake device name
-	RtlInitUnicodeString(&DeviceName, L"\\Device\\CrashDumpUpload");
-	RtlInitUnicodeString(&Win32Device, L"\\DosDevices\\CrashDumpUpload");
-	status = IoCreateDevice(DriverObject,
-		0,
-		&DeviceName,
-		FILE_DEVICE_UNKNOWN,
-		FILE_DEVICE_SECURE_OPEN,
-		FALSE,
-		&DeviceObject);
-	if (!NT_SUCCESS(status))
+	//read ntdll.dll from disk so we can use it for exports
+	if (!NT_SUCCESS(NTDLL::Initialize()))
 	{
-		////周腾修改
-		//NTDLL::Deinitialize();
-		DPRINT("[DeugMessage] IoCreateDevice Error...\r\n");
-		return status;
+		DPRINT("[DeugMessage] Ntdll::Initialize() failed...\r\n");
+		return STATUS_UNSUCCESSFUL;
 	}
-	if (!DeviceObject)
+
+	//初始化所需要NT，ZW方法的地址，将它指向自己定义的变量
+	if (!Undocumented::UndocumentedInit())
 	{
-		//周腾修改
-		//NTDLL::Deinitialize();
-		DPRINT("[DeugMessage] Unexpected I/O Error...\r\n");
-		return STATUS_UNEXPECTED_IO_ERROR;
+		DPRINT("[DeugMessage] UndocumentedInit() failed...\r\n");
+		return STATUS_UNSUCCESSFUL;
 	}
-	DPRINT("[DeugMessage] Device %.*ws created successfully!\r\n", DeviceName.Length / sizeof(WCHAR), DeviceName.Buffer);
 
-	//create symbolic link
-	//DeviceObject->Flags |= DO_BUFFERED_IO;
-	//DeviceObject->Flags &= (~DO_DEVICE_INITIALIZING);
-
-	status = IoCreateSymbolicLink(&Win32Device, &DeviceName);
-	if (!NT_SUCCESS(status))
-	{
-		//周腾修改
-		//NTDLL::Deinitialize();
-		IoDeleteDevice(DriverObject->DeviceObject);
-		DPRINT("[DeugMessage] IoCreateSymbolicLink Error...\r\n");
-		return status;
-	}
-	DPRINT("[DeugMessage] Symbolic link %.*ws->%.*ws created!\r\n", Win32Device.Length / sizeof(WCHAR), Win32Device.Buffer, DeviceName.Length / sizeof(WCHAR), DeviceName.Buffer);
-
-
-	//KdBreakPoint();
+	//创建驱动对象
+	UNICODE_STRING MyDriver;
+	RtlInitUnicodeString(&MyDriver, 设备链接名);//驱动设备名字
+	UNICODE_STRING uzSymbolName; //符号链接名字
+	RtlInitUnicodeString(&uzSymbolName, 符号链接名); //CreateFile
+	CreateDevice(DriverObject, MyDriver, uzSymbolName);
 
 	InitializeListHead((PLIST_ENTRY)&g_injectList);
 	ExInitializeResourceLite(&g_ResourceMutex);
 	ExInitializeNPagedLookasideList(&g_injectListLookaside, NULL, NULL, NULL, sizeof(INJECT_PROCESSID_LIST), TAG_INJECTLIST, NULL);
 	ExInitializeNPagedLookasideList(&g_injectDataLookaside, NULL, NULL, NULL, sizeof(INJECT_PROCESSID_DATA), TAG_INJECTDATA, NULL);
-
 	memset(&g_injectDll, 0, sizeof(INJECT_PROCESSID_DLL));
 
-	//pfn_NtAllocateVirtualMemory = (fn_NtAllocateVirtualMemory)SSDT::GetFunctionAddress("NtAllocateVirtualMemory");
-	//pfn_NtReadVirtualMemory = (fn_NtReadVirtualMemory)SSDT::GetFunctionAddress("NtReadVirtualMemory");
-	//pfn_NtWriteVirtualMemory = (fn_NtWriteVirtualMemory)SSDT::GetFunctionAddress("NtWriteVirtualMemory");
-	//pfn_NtProtectVirtualMemory = (fn_NtProtectVirtualMemory)SSDT::GetFunctionAddress("NtProtectVirtualMemory");
-	//if (pfn_NtAllocateVirtualMemory == NULL ||
-	//	pfn_NtReadVirtualMemory == NULL ||
-	//	pfn_NtWriteVirtualMemory == NULL ||
-	//	pfn_NtProtectVirtualMemory == NULL)
-	//{
-	//	NTDLL::Deinitialize();
-	//	IoDeleteSymbolicLink(&Win32Device);
-	//	IoDeleteDevice(DriverObject->DeviceObject);
-	//	return STATUS_UNSUCCESSFUL;
-	//}
 
-	/*status = PsSetLoadImageNotifyRoutine(LoadImageNotify);
-	if (!NT_SUCCESS(status))
+
+	pfn_NtAllocateVirtualMemory = (fn_NtAllocateVirtualMemory)SSDT::GetFunctionAddress("NtAllocateVirtualMemory");
+	pfn_NtReadVirtualMemory = (fn_NtReadVirtualMemory)SSDT::GetFunctionAddress("NtReadVirtualMemory");
+	pfn_NtWriteVirtualMemory = (fn_NtWriteVirtualMemory)SSDT::GetFunctionAddress("NtWriteVirtualMemory");
+	pfn_NtProtectVirtualMemory = (fn_NtProtectVirtualMemory)SSDT::GetFunctionAddress("NtProtectVirtualMemory");
+	if (pfn_NtAllocateVirtualMemory == NULL ||
+		pfn_NtReadVirtualMemory == NULL ||
+		pfn_NtWriteVirtualMemory == NULL ||
+		pfn_NtProtectVirtualMemory == NULL)
 	{
 		NTDLL::Deinitialize();
-		IoDeleteSymbolicLink(&Win32Device);
-		IoDeleteDevice(DriverObject->DeviceObject);
+		//IoDeleteSymbolicLink(&Win32Device);
+		//IoDeleteDevice(DriverObject->DeviceObject);
+		//return STATUS_UNSUCCESSFUL;
+	}
+
+	NTSTATUS status;
+	status = PsSetLoadImageNotifyRoutine(LoadImageNotify);
+	if (!NT_SUCCESS(status))
+	{
+		DriverUnload(DriverObject);
 		return status;
 	}
 
@@ -1296,12 +1325,10 @@ NTSTATUS DriverEntry(
 	if (!NT_SUCCESS(status))
 	{
 		PsRemoveLoadImageNotifyRoutine(LoadImageNotify);
-		NTDLL::Deinitialize();
-		IoDeleteSymbolicLink(&Win32Device);
-		IoDeleteDevice(DriverObject->DeviceObject);
+		DriverUnload(DriverObject);
 		return status;
-	}*/
+	}
 
 	return STATUS_SUCCESS;
-
 }
+

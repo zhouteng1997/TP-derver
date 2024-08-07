@@ -3,11 +3,11 @@
 
 static HOOK hook_internal(ULONG_PTR addr, void* newfunc)
 {
-    //allocate structure
+    //分配一个HOOK的空间并填充长度
     HOOK hook = (HOOK)RtlAllocateMemory(true, sizeof(HOOKSTRUCT));
-    //set hooking address
+    //记录hook的源地址   (在什么位置)
     hook->addr = addr;
-    //set hooking opcode
+    //整理一个结构，将其替换到源结构  (要替换的东西)
 #ifdef _WIN64
     hook->hook.mov = 0xB848;
 #else
@@ -16,8 +16,9 @@ static HOOK hook_internal(ULONG_PTR addr, void* newfunc)
     hook->hook.addr = (ULONG_PTR)newfunc;
     hook->hook.push = 0x50;
     hook->hook.ret = 0xc3;
-    //set original data
+    //拷贝源结构到orig   (被替换的东西需要保存)
     RtlCopyMemory(&hook->orig, (const void*)addr, sizeof(HOOKOPCODES));
+    //在地址写上对应的结构 （替换的东西替换到对应的位置）
     if(!NT_SUCCESS(RtlSuperCopyMemory((void*)addr, &hook->hook, sizeof(HOOKOPCODES))))
     {
         RtlFreeMemory(hook);

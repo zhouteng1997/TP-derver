@@ -1,7 +1,7 @@
 #include "ssdt.h"
 #include "undocumented.h"
-#include "pe.h"
-
+//#include "undocumented.h"
+//#include "pe.h"
 #include "ntdll.h"
 
 //structures
@@ -30,8 +30,8 @@ static SSDTStruct* SSDTfind()
 		SSDT = (SSDTStruct*)MmGetSystemRoutineAddress(&routineName);
 #else
 		//x64 code
-		ULONG kernelSize;
-		ULONG_PTR kernelBase = (ULONG_PTR)Undocumented::GetKernelBase(&kernelSize);
+		ULONG kernelSize=0;
+		ULONG_PTR kernelBase =(ULONG_PTR)Undocumented::GetKernelBase(&kernelSize);
 		if (kernelBase == 0 || kernelSize == 0)
 			return NULL;
 
@@ -72,6 +72,7 @@ static SSDTStruct* SSDTfind()
 
 PVOID SSDT::GetFunctionAddress(const char* apiname)
 {
+	apiname;
 	//read address from SSDT
 	SSDTStruct* SSDT = SSDTfind();
 	if (!SSDT)
@@ -159,7 +160,7 @@ HOOK SSDT::Hook(const char* apiname, void* newfunc)
 		DPRINT("[DeugMessage] ServiceTable not found...\r\n");
 		return 0;
 	}
-	int FunctionIndex = NTDLL::GetExportSsdtIndex(apiname);
+	int FunctionIndex = 0; // NTDLL::GetExportSsdtIndex(apiname);
 	if (FunctionIndex == -1)
 		return 0;
 	if ((ULONGLONG)FunctionIndex >= SSDT->NumberOfServices)
@@ -191,7 +192,7 @@ HOOK SSDT::Hook(const char* apiname, void* newfunc)
 		UNREFERENCED_PARAMETER(Highest);
 		DPRINT("[DeugMessage] Range: 0x%p-0x%p\r\n", Lowest, Highest);
 		CodeSize = 0;
-		CodeStart = PE::GetPageBase(Undocumented::GetKernelBase(), &CodeSize, (PVOID)((oldValue >> 4) + SSDTbase));
+		CodeStart = 0;// PE::GetPageBase(Undocumented::GetKernelBase(), &CodeSize, (PVOID)((oldValue >> 4) + SSDTbase));
 		if (!CodeStart || !CodeSize)
 		{
 			DPRINT("[DeugMessage] PeGetPageBase failed...\r\n");

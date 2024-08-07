@@ -1,12 +1,14 @@
 #include "_global.h"
 
+
 void* RtlAllocateMemory(bool InZeroMemory, SIZE_T InSize)
 {
-	void* Result = ExAllocatePool2(NonPagedPool, InSize, 'HIDE');
+	void* Result = ExAllocatePoolZero(NonPagedPool, InSize, 'HIDE');
 	if (InZeroMemory && (Result != NULL))
 		RtlZeroMemory(Result, InSize);
 	return Result;
 }
+
 
 void RtlFreeMemory(void* InPointer)
 {
@@ -14,6 +16,7 @@ void RtlFreeMemory(void* InPointer)
 }
 
 //Based on: http://leguanyuan.blogspot.nl/2013/09/x64-inline-hook-zwcreatesection.html
+
 NTSTATUS RtlSuperCopyMemory(IN VOID UNALIGNED* Destination, IN CONST VOID UNALIGNED* Source, IN ULONG Length)
 {
 	//Change memory properties.

@@ -1,6 +1,7 @@
 #ifndef _NTDLL_H
 #define _NTDLL_H
 
+#include <ntifs.h>
 #include "_global.h"
 
 class NTDLL
