@@ -13,6 +13,12 @@
 //我虚拟机版本为Windows 10 Kernel Version 17763 MP (1 procs) Free x64 ，所以选择了Windows 10.0.17763
 
 
+//创建驱动设备符号
+#define 符号链接名 L"\\??\\InjectDriver"
+//创建驱动设备对象
+#define 设备链接名 L"\\DEVICE\\InjectDriver"
+
+
 #define 写测试 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x803, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 #define 读测试 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x804, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 #define 读写测试 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x805, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
@@ -36,11 +42,10 @@
 
 #define IO_ZwQueryVirtualMemory CTL_CODE(FILE_DEVICE_UNKNOWN, 0x830, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 
-#define IOCTL_SET_INJECT_X86DLL \
-    CTL_CODE(FILE_DEVICE_UNKNOWN, 0x900, METHOD_IN_DIRECT, FILE_ANY_ACCESS)
 
-#define IOCTL_SET_INJECT_X64DLL \
-    CTL_CODE(FILE_DEVICE_UNKNOWN, 0x901, METHOD_IN_DIRECT, FILE_ANY_ACCESS)
+#define InjectDll_X64 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x900, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
+
+
 
 #define TAG_INJECTLIST	'ljni'
 #define TAG_INJECTDATA	'djni'
@@ -165,10 +170,6 @@ fn_NtReadVirtualMemory		pfn_NtReadVirtualMemory;
 fn_NtWriteVirtualMemory		pfn_NtWriteVirtualMemory;
 fn_NtProtectVirtualMemory	pfn_NtProtectVirtualMemory;
 
-//创建驱动设备符号
-#define 符号链接名 L"\\??\\HookDriver"
-//创建驱动设备对象
-#define 设备链接名 L"\\DEVICE\\HookDriver"
 
 //创建设备
 NTSTATUS CreateDevice(PDRIVER_OBJECT driver, UNICODE_STRING MyDriver, UNICODE_STRING uzSymbolName)
@@ -263,28 +264,28 @@ NTSTATUS DriverControlHandler(
 	switch (irpSp->Parameters.DeviceIoControl.IoControlCode)
 	{
 
-	case IOCTL_SET_INJECT_X86DLL:
-	{
-		if (g_injectDll.x86dll == NULL && g_injectDll.x86dllsize == 0)
-		{
-			////周腾修改
-			PIMAGE_DOS_HEADER dosHeadPtr = (PIMAGE_DOS_HEADER)inBuf;
-			if (dosHeadPtr->e_magic != IMAGE_DOS_SIGNATURE)
-			{
-				break;
-			}
+	//case IOCTL_SET_INJECT_X86DLL:
+	//{
+	//	if (g_injectDll.x86dll == NULL && g_injectDll.x86dllsize == 0)
+	//	{
+	//		////周腾修改
+	//		PIMAGE_DOS_HEADER dosHeadPtr = (PIMAGE_DOS_HEADER)inBuf;
+	//		if (dosHeadPtr->e_magic != IMAGE_DOS_SIGNATURE)
+	//		{
+	//			break;
+	//		}
 
-			g_injectDll.x86dll = ExAllocatePoolZero(NonPagedPool, inBufLength, 'd68x');
-			if (g_injectDll.x86dll != NULL)
-			{
-				g_injectDll.x86dllsize = inBufLength;
-				memcpy(g_injectDll.x86dll, inBuf, inBufLength);
-				ntStatus = STATUS_SUCCESS;
-			}
-		}
-		break;
-	}
-	case IOCTL_SET_INJECT_X64DLL:
+	//		g_injectDll.x86dll = ExAllocatePoolZero(NonPagedPool, inBufLength, 'd68x');
+	//		if (g_injectDll.x86dll != NULL)
+	//		{
+	//			g_injectDll.x86dllsize = inBufLength;
+	//			memcpy(g_injectDll.x86dll, inBuf, inBufLength);
+	//			ntStatus = STATUS_SUCCESS;
+	//		}
+	//	}
+	//	break;
+	//}
+	case InjectDll_X64:
 	{
 		if (g_injectDll.x64dll == NULL && g_injectDll.x64dllsize == 0)
 		{
@@ -414,85 +415,85 @@ ULONG_PTR GetProcAddressR(ULONG_PTR hModule, const char* lpProcName, BOOLEAN x64
 
 
 	//周腾修改
-	//__try
-	//{
-	//	UINT_PTR uiAddressArray = 0;
-	//	UINT_PTR uiNameArray = 0;
-	//	UINT_PTR uiNameOrdinals = 0;
-	//	PIMAGE_NT_HEADERS32 pNtHeaders32 = NULL;
-	//	PIMAGE_NT_HEADERS64 pNtHeaders64 = NULL;
-	//	PIMAGE_DATA_DIRECTORY pDataDirectory = NULL;
-	//	PIMAGE_EXPORT_DIRECTORY pExportDirectory = NULL;
+	__try
+	{
+		UINT_PTR uiAddressArray = 0;
+		UINT_PTR uiNameArray = 0;
+		UINT_PTR uiNameOrdinals = 0;
+		PIMAGE_NT_HEADERS32 pNtHeaders32 = NULL;
+		PIMAGE_NT_HEADERS64 pNtHeaders64 = NULL;
+		PIMAGE_DATA_DIRECTORY pDataDirectory = NULL;
+		PIMAGE_EXPORT_DIRECTORY pExportDirectory = NULL;
 
-	//	// get the VA of the modules NT Header
-	//	pNtHeaders32 = (PIMAGE_NT_HEADERS32)(uiLibraryAddress + ((PIMAGE_DOS_HEADER)uiLibraryAddress)->e_lfanew);
-	//	pNtHeaders64 = (PIMAGE_NT_HEADERS64)(uiLibraryAddress + ((PIMAGE_DOS_HEADER)uiLibraryAddress)->e_lfanew);
-	//	if (x64Module)
-	//	{
-	//		pDataDirectory = (PIMAGE_DATA_DIRECTORY)&pNtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
-	//	}
-	//	else
-	//	{
-	//		pDataDirectory = (PIMAGE_DATA_DIRECTORY)&pNtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
-	//	}
+		// get the VA of the modules NT Header
+		pNtHeaders32 = (PIMAGE_NT_HEADERS32)(uiLibraryAddress + ((PIMAGE_DOS_HEADER)uiLibraryAddress)->e_lfanew);
+		pNtHeaders64 = (PIMAGE_NT_HEADERS64)(uiLibraryAddress + ((PIMAGE_DOS_HEADER)uiLibraryAddress)->e_lfanew);
+		if (x64Module)
+		{
+			pDataDirectory = (PIMAGE_DATA_DIRECTORY)&pNtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
+		}
+		else
+		{
+			pDataDirectory = (PIMAGE_DATA_DIRECTORY)&pNtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
+		}
 
 
-	//	// get the VA of the export directory
-	//	pExportDirectory = (PIMAGE_EXPORT_DIRECTORY)(uiLibraryAddress + pDataDirectory->VirtualAddress);
+		// get the VA of the export directory
+		pExportDirectory = (PIMAGE_EXPORT_DIRECTORY)(uiLibraryAddress + pDataDirectory->VirtualAddress);
 
-	//	// get the VA for the array of addresses
-	//	uiAddressArray = (uiLibraryAddress + pExportDirectory->AddressOfFunctions);
+		// get the VA for the array of addresses
+		uiAddressArray = (uiLibraryAddress + pExportDirectory->AddressOfFunctions);
 
-	//	// get the VA for the array of name pointers
-	//	uiNameArray = (uiLibraryAddress + pExportDirectory->AddressOfNames);
+		// get the VA for the array of name pointers
+		uiNameArray = (uiLibraryAddress + pExportDirectory->AddressOfNames);
 
-	//	// get the VA for the array of name ordinals
-	//	uiNameOrdinals = (uiLibraryAddress + pExportDirectory->AddressOfNameOrdinals);
+		// get the VA for the array of name ordinals
+		uiNameOrdinals = (uiLibraryAddress + pExportDirectory->AddressOfNameOrdinals);
 
-	//	// test if we are importing by name or by ordinal...
-	//	if ((PtrToUlong(lpProcName) & 0xFFFF0000) == 0x00000000)
-	//	{
-	//		// import by ordinal...
+		// test if we are importing by name or by ordinal...
+		if ((PtrToUlong(lpProcName) & 0xFFFF0000) == 0x00000000)
+		{
+			// import by ordinal...
 
-	//		// use the import ordinal (- export ordinal base) as an index into the array of addresses
-	//		uiAddressArray += ((IMAGE_ORDINAL(PtrToUlong(lpProcName)) - pExportDirectory->Base) * sizeof(unsigned long));
+			// use the import ordinal (- export ordinal base) as an index into the array of addresses
+			uiAddressArray += ((IMAGE_ORDINAL(PtrToUlong(lpProcName)) - pExportDirectory->Base) * sizeof(unsigned long));
 
-	//		// resolve the address for this imported function
-	//		fpResult = (ULONG_PTR)(uiLibraryAddress + DEREF_32(uiAddressArray));
-	//	}
-	//	else
-	//	{
-	//		// import by name...
-	//		unsigned long dwCounter = pExportDirectory->NumberOfNames;
-	//		while (dwCounter--)
-	//		{
-	//			char* cpExportedFunctionName = (char*)(uiLibraryAddress + DEREF_32(uiNameArray));
+			// resolve the address for this imported function
+			fpResult = (ULONG_PTR)(uiLibraryAddress + DEREF_32(uiAddressArray));
+		}
+		else
+		{
+			// import by name...
+			unsigned long dwCounter = pExportDirectory->NumberOfNames;
+			while (dwCounter--)
+			{
+				char* cpExportedFunctionName = (char*)(uiLibraryAddress + DEREF_32(uiNameArray));
 
-	//			// test if we have a match...
-	//			if (strcmp(cpExportedFunctionName, lpProcName) == 0)
-	//			{
-	//				// use the functions name ordinal as an index into the array of name pointers
-	//				uiAddressArray += (DEREF_16(uiNameOrdinals) * sizeof(unsigned long));
+				// test if we have a match...
+				if (strcmp(cpExportedFunctionName, lpProcName) == 0)
+				{
+					// use the functions name ordinal as an index into the array of name pointers
+					uiAddressArray += (DEREF_16(uiNameOrdinals) * sizeof(unsigned long));
 
-	//				// calculate the virtual address for the function
-	//				fpResult = (ULONG_PTR)(uiLibraryAddress + DEREF_32(uiAddressArray));
+					// calculate the virtual address for the function
+					fpResult = (ULONG_PTR)(uiLibraryAddress + DEREF_32(uiAddressArray));
 
-	//				// finish...
-	//				break;
-	//			}
+					// finish...
+					break;
+				}
 
-	//			// get the next exported function name
-	//			uiNameArray += sizeof(unsigned long);
+				// get the next exported function name
+				uiNameArray += sizeof(unsigned long);
 
-	//			// get the next exported function name ordinal
-	//			uiNameOrdinals += sizeof(unsigned short);
-	//		}
-	//	}
-	//}
-	//__except (EXCEPTION_EXECUTE_HANDLER)
-	//{
-	//	fpResult = NULL;
-	//}
+				// get the next exported function name ordinal
+				uiNameOrdinals += sizeof(unsigned short);
+			}
+		}
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER)
+	{
+		fpResult = NULL;
+	}
 
 	return fpResult;
 }

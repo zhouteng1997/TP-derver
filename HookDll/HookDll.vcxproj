@@ -150,6 +150,8 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="hookapi.cpp" />
     <ClCompile Include="hookReadProcessMemory.cpp" />
+    <ClCompile Include="hookTerminateProcess.cpp" />
+    <ClCompile Include="hookWriteProcessMemory.cpp" />
     <ClCompile Include="hookZwQueryVirtualMemory.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

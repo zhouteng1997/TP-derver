@@ -179,15 +179,49 @@ typedef union _EXHANDLE {
 	ULONG64 Value;
 } EXHANDLE, * PEXHANDLE;
 
-int main()
-{
-	HANDLE handle = (HANDLE)0x4e;
-	EXHANDLE b;
-	b.Value = (ULONG64)handle;
+//int main()
+//{
+//	HANDLE handle = (HANDLE)0x4e;
+//	EXHANDLE b;
+//	b.Value = (ULONG64)handle;
+//
+//	//HANDLE hSourceProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, 38256);
+//	遍历进程句柄();
+//	return 1;
+//}
 
-	//HANDLE hSourceProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, 38256);
-	遍历进程句柄();
-	return 1;
+
+bool IsTestModeEnabled() {
+	typedef struct _SYSTEM_CODEINTEGRITY_INFORMATION {
+		ULONG Length;
+		ULONG CodeIntegrityOptions;
+	} SYSTEM_CODEINTEGRITY_INFORMATION, * PSYSTEM_CODEINTEGRITY_INFORMATION;
+
+	SYSTEM_CODEINTEGRITY_INFORMATION integrityInfo = { 0 };
+	integrityInfo.Length = sizeof(integrityInfo);
+
+	NTSTATUS status = NtQuerySystemInformation(
+		NTDEFS::SystemCodeIntegrityInformation, // SystemCodeIntegrityInformation
+		&integrityInfo,
+		sizeof(integrityInfo),
+		nullptr);
+
+	if (status == STATUS_SUCCESS) {
+	    // 检查 CodeIntegrityOptions 的 0x02 标志
+	    return (integrityInfo.CodeIntegrityOptions & 0x02) != 0;
+	}
+
+	return false;
 }
 
+int main() {
+	if (IsTestModeEnabled()) {
+		std::cout << "系统处于测试模式。" << std::endl;
+	}
+	else {
+		std::cout << "系统未处于测试模式。" << std::endl;
+	}
+	system("pause");
+	return 0;
+}
 

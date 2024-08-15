@@ -4,6 +4,18 @@
 #include "hookapi.h"
 #include <stdio.h>
 
+
+//WriteProcessMemory 写内存
+//ReadProcessMemory 读内存
+//TerminateProcess 结束进程
+//VirtualProtectEx 修改页面属性
+//VirtualAllocEx
+//VirtualFreeEx
+//CreateRemoteThread 调用call
+//DuplicateHandle 复制句柄
+
+
+
 BOOL HOOKReadProcessMemory(BOOL isHook);
 BOOL HOOKZwQueryVirtualMemory(BOOL isHook);
 

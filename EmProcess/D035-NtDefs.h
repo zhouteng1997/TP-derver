@@ -238,7 +238,7 @@ namespace NTDEFS
 		//100?
 		SystemPageMemoryInformation = 123,//×Ô¶¨Òå
 		SystemPolicyInformation = 134,
-
+		SystemCodeIntegrityInformation=103
 	} SYSTEM_INFORMATION_CLASS, * PSYSTEM_INFORMATION_CLASS;
 
 	typedef struct _SYSTEM_BASIC_INFORMATION

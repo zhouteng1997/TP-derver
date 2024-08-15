@@ -160,7 +160,7 @@ HOOK SSDT::Hook(const char* apiname, void* newfunc)
 		DPRINT("[DeugMessage] ServiceTable not found...\r\n");
 		return 0;
 	}
-	int FunctionIndex = 0; // NTDLL::GetExportSsdtIndex(apiname);
+	int FunctionIndex = NTDLL::GetExportSsdtIndex(apiname);
 	if (FunctionIndex == -1)
 		return 0;
 	if ((ULONGLONG)FunctionIndex >= SSDT->NumberOfServices)

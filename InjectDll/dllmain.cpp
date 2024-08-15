@@ -19,6 +19,7 @@ DWORD __stdcall WorkThread(LPVOID lpram) {
 	char buf[1024];
 	sprintf_s(buf, "Inject OK \n");
 	OutputDebugStringA(buf);
+	MessageBox(NULL, exeName, _T("加载InjectDl.dll成功"), MB_ICONINFORMATION);
 
 	if (_tcsicmp(exeName, _T("win32calc.exe")) != 0)
 	{

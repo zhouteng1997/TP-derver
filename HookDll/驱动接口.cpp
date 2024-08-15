@@ -25,6 +25,7 @@
 #define IO_通过句柄获取对象 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x820, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 #define IO_通过进程遍历句柄 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x821, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 #define IO_ZwQueryVirtualMemory CTL_CODE(FILE_DEVICE_UNKNOWN, 0x830, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
+#define IO_TerminateProcess CTL_CODE(FILE_DEVICE_UNKNOWN, 0x831, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 
 
 
@@ -73,6 +74,72 @@ namespace TROAPI {
 		DeviceIoControl(
 			DeviceHandle,//CreateFile打开驱动设备返回的句柄
 			IO_读取受保护的进程,//控制码CTL_CODE
+			&input,//输入缓冲区指针
+			sizeof(TINPUT_BUF),//输入缓冲区大小
+			&ret,//返回缓冲区
+			sizeof(ret),//返回缓冲区大小
+			&retSize,//返回字节数
+			NULL);
+		if (ret == 1)
+			return TRUE;
+		return FALSE;
+	}
+
+	BOOL WINAPI TROAPI::MyWriteProcessMemory(
+		_In_ HANDLE hProcess,
+		_In_ LPVOID lpBaseAddress,
+		_In_reads_bytes_(nSize) LPCVOID lpBuffer,
+		_In_ SIZE_T nSize,
+		_Out_opt_ SIZE_T* lpNumberOfBytesWritten
+	) {
+#pragma pack (push)
+#pragma pack(8)
+		typedef struct TINPUT_BUF
+		{
+			UINT64 hProcess;//句柄
+			UINT64 lpBaseAddress;///目标进程地址
+			UINT64 lpBuffer;//接收从目标进程读取的数据的缓冲区
+			UINT64 nSize;//要读取的字节数
+			UINT64 lpNumberOfBytesWritten; //实际读取的字节数
+		}TINPUT_BUF;
+#pragma pack (pop)
+
+		TINPUT_BUF input = { (UINT64)hProcess ,(UINT64)lpBaseAddress ,(UINT64)lpBuffer ,(UINT64)nSize ,(UINT64)lpNumberOfBytesWritten };
+		DWORD retSize = sizeof(INT64);
+		INT64 ret = 0;//输出缓冲区
+		DeviceIoControl(
+			DeviceHandle,//CreateFile打开驱动设备返回的句柄
+			IO_写入受保护的进程,//控制码CTL_CODE
+			&input,//输入缓冲区指针
+			sizeof(TINPUT_BUF),//输入缓冲区大小
+			&ret,//返回缓冲区
+			sizeof(ret),//返回缓冲区大小
+			&retSize,//返回字节数
+			NULL);
+		if (ret == 1)
+			return TRUE;
+		return FALSE;
+	}
+
+	BOOL WINAPI TROAPI::MyTerminateProcess(
+		_In_ HANDLE hProcess,
+		_In_ UINT uExitCode
+	) {
+#pragma pack (push)
+#pragma pack(8)
+		typedef struct TINPUT_BUF
+		{
+			UINT64 hProcess;//句柄
+			UINT64 uExitCode;
+		}TINPUT_BUF;
+#pragma pack (pop)
+
+		TINPUT_BUF input = { (UINT64)hProcess ,(UINT64)uExitCode};
+		DWORD retSize = sizeof(INT64);
+		INT64 ret = 0;//输出缓冲区
+		DeviceIoControl(
+			DeviceHandle,//CreateFile打开驱动设备返回的句柄
+			IO_TerminateProcess,//控制码CTL_CODE
 			&input,//输入缓冲区指针
 			sizeof(TINPUT_BUF),//输入缓冲区大小
 			&ret,//返回缓冲区

@@ -6,8 +6,7 @@
 #include <windows.h>
 
 
-#define 符号链接名64 L"\\??\\InjectDriver64"
-#define 符号链接名32 L"\\??\\InjectDriver32"
+#define 符号链接名 L"\\??\\InjectDriver"
 
 #define InjectDll_X64 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x900, METHOD_BUFFERED,FILE_ANY_ACCESS) //控制码测试
 
@@ -49,9 +48,19 @@ PVOID MyReadFile(WCHAR* fileName, PULONG fileSize) {
 
 int main()
 {
+
+	HINSTANCE hinstDLL =LoadLibrary(L"InjectDll.dll");
+	printf("已将dll传递给驱动 %p", hinstDLL);
+	while (true)
+	{
+		Sleep(1000);
+	}
+	hinstDLL;
+	return 0;
+
 	//打开驱动设备
 	HANDLE DeviceHandle = CreateFileW(
-		符号链接名64,
+		符号链接名,
 		GENERIC_READ | GENERIC_WRITE,
 		FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
 		OPEN_EXISTING,
